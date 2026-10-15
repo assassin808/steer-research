@@ -7,7 +7,7 @@ Format: date · type [FOUND / IDEA / TRIED / DECIDED / ITERATION] · what · why
 ## 2026-10-13
 - FOUND · HLAAR final (Twin-2K-500): compact person representations HGR ~0.39 on hidden split; ~0.15 is item/price effects; small LLMs (<=1.7B) lose to tabular; accuracy<->diversity tradeoff. Feeds Paper B pilot.
 - IDEA · Bloom (safety-research) could test steered agents out of survey.
-- TRIED · Grant draft "Steerable Persons" written without discussing first -> user: discuss proposals first; serve the company's interest via scope/IP, never by hiding.
+- TRIED · Grant draft "Steerable Persons" written without discussing first -> user: discuss proposal framing first before drafting.
 
 ## 2026-10-14
 - DECIDED · Split into Proposal A (representation -> composable control) and B (few answers -> person). Math must be established, not ad hoc; models <4B for our cluster.
