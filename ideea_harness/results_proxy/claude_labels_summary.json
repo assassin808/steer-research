@@ -1,0 +1,228 @@
+{
+ "n_labels": 1400,
+ "agreement_with_claude_TI": {
+  "qwen_truth_x_refusal_info": [
+   0.8242857142857143,
+   0.6105764012012882
+  ],
+  "emb_truth_x_refusal_info": [
+   0.7278571428571429,
+   0.40623024107007694
+  ],
+  "qwen_truth_x_qwen_info": [
+   0.8178571428571428,
+   0.5847948863477768
+  ]
+ },
+ "agreement_info": {
+  "refusal_rule_vs_claude_info": [
+   0.7307142857142858,
+   0.43352566414232485
+  ],
+  "qwen_info_vs_claude_info": [
+   0.9164285714285715,
+   0.8310225303292895
+  ]
+ },
+ "runs": {
+  "iti_1": {
+   "n": 100,
+   "kl_tok": 0.14285395189817102,
+   "kl_first": 0.11955433880326487,
+   "claude_truthful": 0.83,
+   "claude_informative": 0.41,
+   "claude_TI": 0.24,
+   "claude_TI_se": 0.04292346959909278,
+   "claude_dTI_vs_base": 0.07,
+   "claude_dTI_se": 0.03401925006522043,
+   "qwen_TI_same_items": 0.32,
+   "emb_TI_same_items": 0.39,
+   "qq_TI_same_items": 0.26
+  },
+  "euc_0.1": {
+   "n": 100,
+   "kl_tok": 0.2637685552239418,
+   "kl_first": 1.2968638096689045,
+   "claude_truthful": 0.55,
+   "claude_informative": 0.92,
+   "claude_TI": 0.49,
+   "claude_TI_se": 0.05024183937956914,
+   "claude_dTI_vs_base": 0.32,
+   "claude_dTI_se": 0.05125709706957662,
+   "qwen_TI_same_items": 0.62,
+   "emb_TI_same_items": 0.52,
+   "qq_TI_same_items": 0.6
+  },
+  "caa_0.2": {
+   "n": 100,
+   "kl_tok": 0.14466595568243248,
+   "kl_first": 0.05081632692127297,
+   "claude_truthful": 0.76,
+   "claude_informative": 0.37,
+   "claude_TI": 0.14,
+   "claude_TI_se": 0.034873508801977704,
+   "claude_dTI_vs_base": -0.03,
+   "claude_dTI_se": 0.025916396354431683,
+   "qwen_TI_same_items": 0.24,
+   "emb_TI_same_items": 0.3,
+   "qq_TI_same_items": 0.23
+  },
+  "ng_0.05": {
+   "n": 100,
+   "kl_tok": 0.024963430882007167,
+   "kl_first": 0.2827653215890953,
+   "claude_truthful": 0.7,
+   "claude_informative": 0.6,
+   "claude_TI": 0.3,
+   "claude_TI_se": 0.04605661864718382,
+   "claude_dTI_vs_base": 0.13,
+   "claude_dTI_se": 0.040092814505843816,
+   "qwen_TI_same_items": 0.44,
+   "emb_TI_same_items": 0.47,
+   "qq_TI_same_items": 0.41
+  },
+  "ideea_1": {
+   "n": 100,
+   "kl_tok": 0.07090408002105401,
+   "kl_first": 0.08212640129452166,
+   "claude_truthful": 0.8,
+   "claude_informative": 0.41,
+   "claude_TI": 0.21,
+   "claude_TI_se": 0.040936018074033236,
+   "claude_dTI_vs_base": 0.04,
+   "claude_dTI_se": 0.023822206027150385,
+   "qwen_TI_same_items": 0.33,
+   "emb_TI_same_items": 0.36,
+   "qq_TI_same_items": 0.32
+  },
+  "ng_0.2": {
+   "n": 100,
+   "kl_tok": 0.2683901900487445,
+   "kl_first": 2.229223264977458,
+   "claude_truthful": 0.54,
+   "claude_informative": 0.81,
+   "claude_TI": 0.35,
+   "claude_TI_se": 0.047937248544110224,
+   "claude_dTI_vs_base": 0.18,
+   "claude_dTI_se": 0.04668731064218627,
+   "qwen_TI_same_items": 0.61,
+   "emb_TI_same_items": 0.51,
+   "qq_TI_same_items": 0.58
+  },
+  "base": {
+   "n": 100,
+   "kl_tok": 0.0017311223603634664,
+   "kl_first": 0.010834634354796917,
+   "claude_truthful": 0.78,
+   "claude_informative": 0.39,
+   "claude_TI": 0.17,
+   "claude_TI_se": 0.03775251680686369,
+   "claude_dTI_vs_base": 0.0,
+   "claude_dTI_se": 0.0,
+   "qwen_TI_same_items": 0.29,
+   "emb_TI_same_items": 0.32,
+   "qq_TI_same_items": 0.28
+  },
+  "ng_0.1": {
+   "n": 100,
+   "kl_tok": 0.08086833305630385,
+   "kl_first": 0.9080631007585662,
+   "claude_truthful": 0.62,
+   "claude_informative": 0.7,
+   "claude_TI": 0.32,
+   "claude_TI_se": 0.04688261722621506,
+   "claude_dTI_vs_base": 0.15,
+   "claude_dTI_se": 0.043146631096761194,
+   "qwen_TI_same_items": 0.54,
+   "emb_TI_same_items": 0.44,
+   "qq_TI_same_items": 0.49
+  },
+  "ngx_3": {
+   "n": 100,
+   "kl_tok": 0.13732998809906877,
+   "kl_first": 1.364890617991323,
+   "claude_truthful": 0.57,
+   "claude_informative": 0.77,
+   "claude_TI": 0.35,
+   "claude_TI_se": 0.047937248544110224,
+   "claude_dTI_vs_base": 0.18,
+   "claude_dTI_se": 0.044494915439856716,
+   "qwen_TI_same_items": 0.53,
+   "emb_TI_same_items": 0.46,
+   "qq_TI_same_items": 0.5
+  },
+  "ngE_0.2": {
+   "n": 100,
+   "kl_tok": 0.25147039800929494,
+   "kl_first": 1.3164402275439817,
+   "claude_truthful": 0.94,
+   "claude_informative": 0.16,
+   "claude_TI": 0.1,
+   "claude_TI_se": 0.03015113445777636,
+   "claude_dTI_vs_base": -0.07,
+   "claude_dTI_se": 0.03595188138331567,
+   "qwen_TI_same_items": 0.14,
+   "emb_TI_same_items": 0.42,
+   "qq_TI_same_items": 0.12
+  },
+  "ideea_1.5": {
+   "n": 100,
+   "kl_tok": 0.1778018506013573,
+   "kl_first": 0.18294010035995145,
+   "claude_truthful": 0.81,
+   "claude_informative": 0.38,
+   "claude_TI": 0.2,
+   "claude_TI_se": 0.04020151261036849,
+   "claude_dTI_vs_base": 0.03,
+   "claude_dTI_se": 0.03344625390084815,
+   "qwen_TI_same_items": 0.3,
+   "emb_TI_same_items": 0.38,
+   "qq_TI_same_items": 0.28
+  },
+  "ngkl_3": {
+   "n": 100,
+   "kl_tok": 0.09958378547107023,
+   "kl_first": 1.1528217619035823,
+   "claude_truthful": 0.61,
+   "claude_informative": 0.77,
+   "claude_TI": 0.39,
+   "claude_TI_se": 0.04902071300001973,
+   "claude_dTI_vs_base": 0.22,
+   "claude_dTI_se": 0.050370721654548485,
+   "qwen_TI_same_items": 0.59,
+   "emb_TI_same_items": 0.46,
+   "qq_TI_same_items": 0.54
+  },
+  "iti_0.5": {
+   "n": 100,
+   "kl_tok": 0.03737161463912205,
+   "kl_first": 0.03668847751053097,
+   "claude_truthful": 0.78,
+   "claude_informative": 0.42,
+   "claude_TI": 0.2,
+   "claude_TI_se": 0.04020151261036849,
+   "claude_dTI_vs_base": 0.03,
+   "claude_dTI_se": 0.026025303072202636,
+   "qwen_TI_same_items": 0.31,
+   "emb_TI_same_items": 0.37,
+   "qq_TI_same_items": 0.29
+  },
+  "rand_0.2_0": {
+   "n": 100,
+   "kl_tok": 0.14967926587368643,
+   "kl_first": 0.09676742924782468,
+   "claude_truthful": 0.77,
+   "claude_informative": 0.45,
+   "claude_TI": 0.22,
+   "claude_TI_se": 0.04163331998932266,
+   "claude_dTI_vs_base": 0.05,
+   "claude_dTI_se": 0.029454180942609827,
+   "qwen_TI_same_items": 0.3,
+   "emb_TI_same_items": 0.37,
+   "qq_TI_same_items": 0.29
+  }
+ },
+ "runlevel_spearman_claude_vs_qwen_TI_same_items": 0.9558991476920523,
+ "runlevel_spearman_claude_vs_emb_TI_same_items": 0.803532008830022,
+ "runlevel_spearman_claude_vs_qq_TI_same_items": 0.9139072847682118
+}

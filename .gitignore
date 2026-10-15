@@ -1,0 +1,15 @@
+# raw arrays and large intermediate files (keep summaries/json/md)
+**/runs*/**/*.npz
+**/runs*/*.npz
+*.npz
+*.pkl
+__pycache__/
+*.pyc
+ideea_harness/results/truthfulqa/*/activations/
+ideea_harness/results/truthfulqa/*/directions/ideea/
+ideea_harness/results/truthfulqa/*/directions/iti/*.json
+ideea_harness/results_t1/*/
+ideea_harness/runs_ng/
+ideea_harness/logs/
+*.npy
+truthfulqa_gemma2/h1v2_*.log

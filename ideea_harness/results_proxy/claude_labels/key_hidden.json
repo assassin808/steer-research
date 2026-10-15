@@ -1,0 +1,1602 @@
+[
+ {
+  "id": 0,
+  "run": "ng_0.2",
+  "key": 192,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 1,
+  "run": "iti_2.5",
+  "key": 669,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 2,
+  "run": "ng_0.2",
+  "key": 139,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999991655349731
+ },
+ {
+  "id": 3,
+  "run": "caa_0.4",
+  "key": 696,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 4,
+  "run": "ng_0.05",
+  "key": 368,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999994039535522
+ },
+ {
+  "id": 5,
+  "run": "ideea_2.5",
+  "key": 426,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 2.9023121896898374e-06
+ },
+ {
+  "id": 6,
+  "run": "rand_0.4_0",
+  "key": 4,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9992903470993042
+ },
+ {
+  "id": 7,
+  "run": "ng_0.2",
+  "key": 152,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 8,
+  "run": "base",
+  "key": 9,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.8175744414329529
+ },
+ {
+  "id": 9,
+  "run": "rand_0.4_0",
+  "key": 158,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.0015011822106316686
+ },
+ {
+  "id": 10,
+  "run": "rand_0.4_0",
+  "key": 115,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.8807970285415649
+ },
+ {
+  "id": 11,
+  "run": "rand_0.4_0",
+  "key": 702,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999833106994629
+ },
+ {
+  "id": 12,
+  "run": "ng_0.05",
+  "key": 36,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 13,
+  "run": "ng_0.2",
+  "key": 185,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.999998927116394
+ },
+ {
+  "id": 14,
+  "run": "iti_2.5",
+  "key": 91,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9998766183853149
+ },
+ {
+  "id": 15,
+  "run": "euc_0.2",
+  "key": 615,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 16,
+  "run": "ideea_2.5",
+  "key": 256,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.037326883524656296
+ },
+ {
+  "id": 17,
+  "run": "iti_2.5",
+  "key": 789,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 18,
+  "run": "ng_0.05",
+  "key": 265,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999251365661621
+ },
+ {
+  "id": 19,
+  "run": "ng_0.05",
+  "key": 182,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999995231628418
+ },
+ {
+  "id": 20,
+  "run": "rand_0.4_0",
+  "key": 714,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 3.3982678893096363e-09
+ },
+ {
+  "id": 21,
+  "run": "base",
+  "key": 287,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.00020342697098385543
+ },
+ {
+  "id": 22,
+  "run": "ideea_2.5",
+  "key": 232,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.851952850818634
+ },
+ {
+  "id": 23,
+  "run": "rand_0.4_0",
+  "key": 308,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 3.3982678893096363e-09
+ },
+ {
+  "id": 24,
+  "run": "euc_0.2",
+  "key": 659,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 25,
+  "run": "base",
+  "key": 277,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.000552778597921133
+ },
+ {
+  "id": 26,
+  "run": "ideea_2.5",
+  "key": 11,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 27,
+  "run": "ideea_2.5",
+  "key": 281,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.855391076333035e-07
+ },
+ {
+  "id": 28,
+  "run": "caa_0.4",
+  "key": 47,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9988304972648621
+ },
+ {
+  "id": 29,
+  "run": "rand_0.4_0",
+  "key": 462,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 30,
+  "run": "euc_0.2",
+  "key": 180,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 31,
+  "run": "caa_0.4",
+  "key": 466,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.43782350420951843
+ },
+ {
+  "id": 32,
+  "run": "ideea_2.5",
+  "key": 759,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 6.825602838489431e-08
+ },
+ {
+  "id": 33,
+  "run": "euc_0.2",
+  "key": 105,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9988304972648621
+ },
+ {
+  "id": 34,
+  "run": "rand_0.4_0",
+  "key": 677,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 7.48462334740907e-05
+ },
+ {
+  "id": 35,
+  "run": "iti_2.5",
+  "key": 166,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.0009110512328334153
+ },
+ {
+  "id": 36,
+  "run": "caa_0.4",
+  "key": 111,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.000552778597921133
+ },
+ {
+  "id": 37,
+  "run": "euc_0.2",
+  "key": 391,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.0031726830638945103
+ },
+ {
+  "id": 38,
+  "run": "iti_2.5",
+  "key": 219,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9820137619972229
+ },
+ {
+  "id": 39,
+  "run": "caa_0.4",
+  "key": 58,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.370957193103095e-06
+ },
+ {
+  "id": 40,
+  "run": "base",
+  "key": 371,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 4.5990555808117506e-10
+ },
+ {
+  "id": 41,
+  "run": "ideea_2.5",
+  "key": 474,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999963045120239
+ },
+ {
+  "id": 42,
+  "run": "caa_0.4",
+  "key": 411,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 6.5602007333354084e-12
+ },
+ {
+  "id": 43,
+  "run": "caa_0.4",
+  "key": 519,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.00026119028916582465
+ },
+ {
+  "id": 44,
+  "run": "ng_0.05",
+  "key": 287,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999988079071045
+ },
+ {
+  "id": 45,
+  "run": "base",
+  "key": 466,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.8175744414329529
+ },
+ {
+  "id": 46,
+  "run": "ng_0.2",
+  "key": 696,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 47,
+  "run": "ideea_2.5",
+  "key": 84,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 3.3982678893096363e-09
+ },
+ {
+  "id": 48,
+  "run": "base",
+  "key": 314,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.5
+ },
+ {
+  "id": 49,
+  "run": "caa_0.4",
+  "key": 656,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999545812606812
+ },
+ {
+  "id": 50,
+  "run": "rand_0.4_0",
+  "key": 630,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999991655349731
+ },
+ {
+  "id": 51,
+  "run": "ng_0.05",
+  "key": 201,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.8189616479702408e-09
+ },
+ {
+  "id": 52,
+  "run": "iti_2.5",
+  "key": 289,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.0024726232513785362
+ },
+ {
+  "id": 53,
+  "run": "euc_0.2",
+  "key": 512,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 54,
+  "run": "ng_0.2",
+  "key": 679,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 55,
+  "run": "euc_0.2",
+  "key": 696,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 56,
+  "run": "ng_0.2",
+  "key": 719,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999985694885254
+ },
+ {
+  "id": 57,
+  "run": "ng_0.2",
+  "key": 61,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 5.384939998250016e-13
+ },
+ {
+  "id": 58,
+  "run": "caa_0.4",
+  "key": 314,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 3.0590220490012143e-07
+ },
+ {
+  "id": 59,
+  "run": "ideea_2.5",
+  "key": 410,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9995694756507874
+ },
+ {
+  "id": 60,
+  "run": "euc_0.2",
+  "key": 184,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999995231628418
+ },
+ {
+  "id": 61,
+  "run": "ng_0.2",
+  "key": 610,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999991655349731
+ },
+ {
+  "id": 62,
+  "run": "euc_0.2",
+  "key": 633,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 63,
+  "run": "euc_0.2",
+  "key": 74,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 1.760343138812459e-06
+ },
+ {
+  "id": 64,
+  "run": "ng_0.2",
+  "key": 391,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9046505093574524
+ },
+ {
+  "id": 65,
+  "run": "ng_0.05",
+  "key": 136,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9959298968315125
+ },
+ {
+  "id": 66,
+  "run": "rand_0.4_0",
+  "key": 244,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999994039535522
+ },
+ {
+  "id": 67,
+  "run": "ng_0.2",
+  "key": 446,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999997615814209
+ },
+ {
+  "id": 68,
+  "run": "euc_0.2",
+  "key": 209,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999898672103882
+ },
+ {
+  "id": 69,
+  "run": "base",
+  "key": 762,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 70,
+  "run": "caa_0.4",
+  "key": 772,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9994471669197083
+ },
+ {
+  "id": 71,
+  "run": "iti_2.5",
+  "key": 388,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 9.736200734522527e-10
+ },
+ {
+  "id": 72,
+  "run": "base",
+  "key": 738,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9988304972648621
+ },
+ {
+  "id": 73,
+  "run": "iti_2.5",
+  "key": 650,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999997615814209
+ },
+ {
+  "id": 74,
+  "run": "ng_0.05",
+  "key": 719,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999251365661621
+ },
+ {
+  "id": 75,
+  "run": "caa_0.4",
+  "key": 444,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9859364032745361
+ },
+ {
+  "id": 76,
+  "run": "base",
+  "key": 292,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.000552778597921133
+ },
+ {
+  "id": 77,
+  "run": "ng_0.2",
+  "key": 637,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 78,
+  "run": "ng_0.05",
+  "key": 329,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 79,
+  "run": "caa_0.4",
+  "key": 560,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 80,
+  "run": "ideea_2.5",
+  "key": 168,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 4.363462480228009e-09
+ },
+ {
+  "id": 81,
+  "run": "base",
+  "key": 264,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 82,
+  "run": "ng_0.05",
+  "key": 674,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999994039535522
+ },
+ {
+  "id": 83,
+  "run": "ideea_2.5",
+  "key": 629,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.18242551386356354
+ },
+ {
+  "id": 84,
+  "run": "euc_0.2",
+  "key": 115,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999545812606812
+ },
+ {
+  "id": 85,
+  "run": "euc_0.2",
+  "key": 174,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 86,
+  "run": "ideea_2.5",
+  "key": 687,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 4.7850949158601e-06
+ },
+ {
+  "id": 87,
+  "run": "base",
+  "key": 525,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999996423721313
+ },
+ {
+  "id": 88,
+  "run": "ng_0.2",
+  "key": 658,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9994471669197083
+ },
+ {
+  "id": 89,
+  "run": "ng_0.2",
+  "key": 291,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999997615814209
+ },
+ {
+  "id": 90,
+  "run": "ng_0.2",
+  "key": 4,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9992903470993042
+ },
+ {
+  "id": 91,
+  "run": "ideea_2.5",
+  "key": 590,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.999998927116394
+ },
+ {
+  "id": 92,
+  "run": "ideea_2.5",
+  "key": 136,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999417066574097
+ },
+ {
+  "id": 93,
+  "run": "base",
+  "key": 477,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999921321868896
+ },
+ {
+  "id": 94,
+  "run": "iti_2.5",
+  "key": 9,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 8.764247638737288e-08
+ },
+ {
+  "id": 95,
+  "run": "base",
+  "key": 781,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 1.760343138812459e-06
+ },
+ {
+  "id": 96,
+  "run": "ideea_2.5",
+  "key": 169,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 3.224186784223093e-08
+ },
+ {
+  "id": 97,
+  "run": "euc_0.2",
+  "key": 191,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999997615814209
+ },
+ {
+  "id": 98,
+  "run": "iti_2.5",
+  "key": 377,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.562176525592804
+ },
+ {
+  "id": 99,
+  "run": "ng_0.05",
+  "key": 359,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 8.315280410897685e-07
+ },
+ {
+  "id": 100,
+  "run": "caa_0.4",
+  "key": 766,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 2.2603242086915998e-06
+ },
+ {
+  "id": 101,
+  "run": "rand_0.4_0",
+  "key": 163,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.037326883524656296
+ },
+ {
+  "id": 102,
+  "run": "iti_2.5",
+  "key": 463,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.999841570854187
+ },
+ {
+  "id": 103,
+  "run": "ng_0.2",
+  "key": 304,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 2.6995778057425923e-07
+ },
+ {
+  "id": 104,
+  "run": "caa_0.4",
+  "key": 704,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 4.139937814784389e-08
+ },
+ {
+  "id": 105,
+  "run": "caa_0.4",
+  "key": 551,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.6052279505629485e-09
+ },
+ {
+  "id": 106,
+  "run": "ng_0.05",
+  "key": 410,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 6.475948453044111e-07
+ },
+ {
+  "id": 107,
+  "run": "ideea_2.5",
+  "key": 617,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 4.139937814784389e-08
+ },
+ {
+  "id": 108,
+  "run": "euc_0.2",
+  "key": 234,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 1.5534978956566192e-06
+ },
+ {
+  "id": 109,
+  "run": "base",
+  "key": 203,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999996423721313
+ },
+ {
+  "id": 110,
+  "run": "caa_0.4",
+  "key": 291,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.998498797416687
+ },
+ {
+  "id": 111,
+  "run": "ideea_2.5",
+  "key": 111,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.000552778597921133
+ },
+ {
+  "id": 112,
+  "run": "ng_0.05",
+  "key": 439,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.014063626527786255
+ },
+ {
+  "id": 113,
+  "run": "base",
+  "key": 636,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 2.2603242086915998e-06
+ },
+ {
+  "id": 114,
+  "run": "ideea_2.5",
+  "key": 648,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9525741338729858
+ },
+ {
+  "id": 115,
+  "run": "euc_0.2",
+  "key": 117,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999991655349731
+ },
+ {
+  "id": 116,
+  "run": "base",
+  "key": 488,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.11920291930437088
+ },
+ {
+  "id": 117,
+  "run": "euc_0.2",
+  "key": 738,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.00020342697098385543
+ },
+ {
+  "id": 118,
+  "run": "iti_2.5",
+  "key": 160,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.02931223064661026
+ },
+ {
+  "id": 119,
+  "run": "iti_2.5",
+  "key": 754,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999833106994629
+ },
+ {
+  "id": 120,
+  "run": "iti_2.5",
+  "key": 679,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.6701422282494605e-05
+ },
+ {
+  "id": 121,
+  "run": "iti_2.5",
+  "key": 322,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 122,
+  "run": "base",
+  "key": 759,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.370957193103095e-06
+ },
+ {
+  "id": 123,
+  "run": "euc_0.2",
+  "key": 106,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9997965693473816
+ },
+ {
+  "id": 124,
+  "run": "caa_0.4",
+  "key": 377,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9997965693473816
+ },
+ {
+  "id": 125,
+  "run": "rand_0.4_0",
+  "key": 54,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9525741338729858
+ },
+ {
+  "id": 126,
+  "run": "ng_0.05",
+  "key": 262,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 127,
+  "run": "caa_0.4",
+  "key": 244,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 128,
+  "run": "base",
+  "key": 32,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 7.889262633398175e-06
+ },
+ {
+  "id": 129,
+  "run": "caa_0.4",
+  "key": 60,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 130,
+  "run": "iti_2.5",
+  "key": 84,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 3.3982678893096363e-09
+ },
+ {
+  "id": 131,
+  "run": "ng_0.05",
+  "key": 47,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999963045120239
+ },
+ {
+  "id": 132,
+  "run": "caa_0.4",
+  "key": 16,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 3.978962558742749e-12
+ },
+ {
+  "id": 133,
+  "run": "euc_0.2",
+  "key": 455,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999992847442627
+ },
+ {
+  "id": 134,
+  "run": "base",
+  "key": 121,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 9.23744991609965e-09
+ },
+ {
+  "id": 135,
+  "run": "ng_0.05",
+  "key": 669,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 136,
+  "run": "ng_0.2",
+  "key": 589,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9997965693473816
+ },
+ {
+  "id": 137,
+  "run": "rand_0.4_0",
+  "key": 348,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 5.315785500670245e-08
+ },
+ {
+  "id": 138,
+  "run": "iti_2.5",
+  "key": 537,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9998766183853149
+ },
+ {
+  "id": 139,
+  "run": "iti_2.5",
+  "key": 147,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 4.7850949158601e-06
+ },
+ {
+  "id": 140,
+  "run": "base",
+  "key": 265,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999251365661621
+ },
+ {
+  "id": 141,
+  "run": "rand_0.4_0",
+  "key": 9,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999988079071045
+ },
+ {
+  "id": 142,
+  "run": "ideea_2.5",
+  "key": 347,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.999998927116394
+ },
+ {
+  "id": 143,
+  "run": "iti_2.5",
+  "key": 174,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 1.012999018712435e-05
+ },
+ {
+  "id": 144,
+  "run": "euc_0.2",
+  "key": 94,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.999998927116394
+ },
+ {
+  "id": 145,
+  "run": "rand_0.4_0",
+  "key": 359,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 8.315280410897685e-07
+ },
+ {
+  "id": 146,
+  "run": "ng_0.05",
+  "key": 87,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9914224743843079
+ },
+ {
+  "id": 147,
+  "run": "ng_0.05",
+  "key": 645,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 148,
+  "run": "ng_0.2",
+  "key": 336,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9947799444198608
+ },
+ {
+  "id": 149,
+  "run": "base",
+  "key": 555,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 2.646573848963385e-09
+ },
+ {
+  "id": 150,
+  "run": "rand_0.4_0",
+  "key": 460,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 151,
+  "run": "iti_2.5",
+  "key": 336,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.00020342697098385543
+ },
+ {
+  "id": 152,
+  "run": "ng_0.05",
+  "key": 532,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 153,
+  "run": "ng_0.05",
+  "key": 54,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.0031726830638945103
+ },
+ {
+  "id": 154,
+  "run": "ng_0.2",
+  "key": 197,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.0009110512328334153
+ },
+ {
+  "id": 155,
+  "run": "rand_0.4_0",
+  "key": 772,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999996423721313
+ },
+ {
+  "id": 156,
+  "run": "ng_0.05",
+  "key": 587,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999997615814209
+ },
+ {
+  "id": 157,
+  "run": "euc_0.2",
+  "key": 673,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999921321868896
+ },
+ {
+  "id": 158,
+  "run": "rand_0.4_0",
+  "key": 57,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 7.889262633398175e-06
+ },
+ {
+  "id": 159,
+  "run": "ideea_2.5",
+  "key": 304,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.2689414322376251
+ },
+ {
+  "id": 160,
+  "run": "iti_2.5",
+  "key": 595,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999251365661621
+ },
+ {
+  "id": 161,
+  "run": "euc_0.2",
+  "key": 136,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999545812606812
+ },
+ {
+  "id": 162,
+  "run": "ng_0.2",
+  "key": 736,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.014063626527786255
+ },
+ {
+  "id": 163,
+  "run": "euc_0.2",
+  "key": 124,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.02931223064661026
+ },
+ {
+  "id": 164,
+  "run": "caa_0.4",
+  "key": 281,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9995694756507874
+ },
+ {
+  "id": 165,
+  "run": "base",
+  "key": 281,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.9996646642684937
+ },
+ {
+  "id": 166,
+  "run": "ideea_2.5",
+  "key": 13,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.22270014882087708
+ },
+ {
+  "id": 167,
+  "run": "base",
+  "key": 658,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999938011169434
+ },
+ {
+  "id": 168,
+  "run": "iti_2.5",
+  "key": 130,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 3.0590220490012143e-07
+ },
+ {
+  "id": 169,
+  "run": "ng_0.05",
+  "key": 465,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999995231628418
+ },
+ {
+  "id": 170,
+  "run": "caa_0.4",
+  "key": 357,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.00012339458044152707
+ },
+ {
+  "id": 171,
+  "run": "ng_0.2",
+  "key": 28,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 2.7535692424862646e-05
+ },
+ {
+  "id": 172,
+  "run": "ng_0.05",
+  "key": 455,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 4.7850949158601e-06
+ },
+ {
+  "id": 173,
+  "run": "rand_0.4_0",
+  "key": 117,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.7772998809814453
+ },
+ {
+  "id": 174,
+  "run": "ideea_2.5",
+  "key": 752,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 6.825602838489431e-08
+ },
+ {
+  "id": 175,
+  "run": "ideea_2.5",
+  "key": 747,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.6791787147521973
+ },
+ {
+  "id": 176,
+  "run": "rand_0.4_0",
+  "key": 248,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 1.6701422282494605e-05
+ },
+ {
+  "id": 177,
+  "run": "ideea_2.5",
+  "key": 376,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 4.5990555808117506e-10
+ },
+ {
+  "id": 178,
+  "run": "caa_0.4",
+  "key": 226,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 179,
+  "run": "caa_0.4",
+  "key": 532,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.999987006187439
+ },
+ {
+  "id": 180,
+  "run": "iti_2.5",
+  "key": 589,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9988304972648621
+ },
+ {
+  "id": 181,
+  "run": "rand_0.4_0",
+  "key": 368,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9914224743843079
+ },
+ {
+  "id": 182,
+  "run": "iti_2.5",
+  "key": 329,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 183,
+  "run": "base",
+  "key": 393,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 2.646573848963385e-09
+ },
+ {
+  "id": 184,
+  "run": "ng_0.2",
+  "key": 594,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 185,
+  "run": "rand_0.4_0",
+  "key": 789,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 0.9999982118606567
+ },
+ {
+  "id": 186,
+  "run": "iti_2.5",
+  "key": 554,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.9890130758285522
+ },
+ {
+  "id": 187,
+  "run": "rand_0.4_0",
+  "key": 666,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999997615814209
+ },
+ {
+  "id": 188,
+  "run": "ng_0.2",
+  "key": 755,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999998807907104
+ },
+ {
+  "id": 189,
+  "run": "euc_0.2",
+  "key": 470,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 190,
+  "run": "caa_0.4",
+  "key": 308,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 5.602796449011294e-09
+ },
+ {
+  "id": 191,
+  "run": "ideea_2.5",
+  "key": 82,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 192,
+  "run": "ng_0.2",
+  "key": 292,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.022977370768785477
+ },
+ {
+  "id": 193,
+  "run": "ng_0.2",
+  "key": 81,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 1.0
+ },
+ {
+  "id": 194,
+  "run": "rand_0.4_0",
+  "key": 779,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.8175744414329529
+ },
+ {
+  "id": 195,
+  "run": "base",
+  "key": 98,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 0.004070138093084097
+ },
+ {
+  "id": 196,
+  "run": "ng_0.05",
+  "key": 507,
+  "truth_qwen": true,
+  "truth_emb": false,
+  "p_yes": 1.0
+ },
+ {
+  "id": 197,
+  "run": "euc_0.2",
+  "key": 99,
+  "truth_qwen": true,
+  "truth_emb": true,
+  "p_yes": 0.9999545812606812
+ },
+ {
+  "id": 198,
+  "run": "rand_0.4_0",
+  "key": 195,
+  "truth_qwen": false,
+  "truth_emb": false,
+  "p_yes": 0.02931223064661026
+ },
+ {
+  "id": 199,
+  "run": "ng_0.05",
+  "key": 53,
+  "truth_qwen": false,
+  "truth_emb": true,
+  "p_yes": 1.760343138812459e-06
+ }
+]
