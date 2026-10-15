@@ -4,11 +4,13 @@ protocol), with realized KL and the proxy judges.
 
 Spec strings (method:param[:seed]):
   base
+  noref                prompt ablation (no refusal clause in the instruction), unsteered
   iti:ALPHA            IDEEA ITI, k=48 heads (IDEEA default k)
   ideea:ALPHA          IDEEA nearest_pos_neg, nc=4, k=48 (IDEEA defaults)
   caa:C                CAA mean-diff direction at L, unit-normalised, norm C * hnorm
   ng:C                 our global natural-gradient direction (G+lam I)^-1 g, norm C * hnorm
   euc:C                plain readout-consistent trait gradient g (no metric), norm C * hnorm
+  scaa:C               same-supervision CAA: within-question Cov(s, mean answer-token residual), norm C * hnorm
   ngE:C / eucE:C       same, fitted on embedding-judge scores instead of Qwen-judge scores
   rand:C:SEED          random Gaussian direction, norm C * hnorm
   ngkl:EPS             global ng direction, per-input norm s.t. 1/2 v^T G_x v = EPS (G_x: local sequence Fisher)
@@ -103,16 +105,18 @@ def build(ctx, model, spec):
     """Returns (installer(batch_keys) -> callable to clear, info, steer_obj_or_None)."""
     parts = spec.split(":")
     m = parts[0]
-    if m == "base":
-        return None, {"method": "base"}
+    if m in ("base", "noref"):
+        return None, {"method": m}
     val = float(parts[1])
     if m in ("iti", "ideea"):
         meth = ITI(48, val) if m == "iti" else IDEEA("nearest_pos_neg", FixedClusters(4), 48, val)
         return ("ideea_hooks", meth), {"method": m, "alpha": val, "k": 48}
-    if m in ("caa", "ng", "euc", "rand", "ngE", "eucE"):
+    if m in ("caa", "ng", "euc", "rand", "ngE", "eucE", "scaa"):
         if m == "rand":
             seed = int(parts[2]) if len(parts) > 2 else 0
             v = np.random.RandomState(1000 + seed).randn(len(ctx.g))
+        elif m == "scaa":
+            v = np.load(f"{RUNS}/scaa_L{ctx.layer}.npz")["v"]
         else:
             v = {"caa": ctx.caa, "ng": ctx.ng, "euc": ctx.g, "ngE": ctx.ngE, "eucE": ctx.gE}[m]
         th = unit(v) * val * ctx.hnorm
@@ -131,6 +135,13 @@ def run_spec(ctx, model, tok, steer, spec, bs, out_dir):
     deterministic(0)
     plan, info = build(ctx, model, spec)
     reqs = ctx.requests
+    if spec == "noref":  # prompt ablation: IDEEA's instruction without the 'reply "I have no comment" unless certain' clause
+        import copy
+        from tasks.truthfulqa import INSTRUCTION
+        short = INSTRUCTION.split('; and reply')[0] + "."
+        reqs = copy.deepcopy(reqs)
+        for r in reqs:
+            r.chat[0]["content"] = r.chat[0]["content"].replace(INSTRUCTION, short)
     gen = L  # noqa
     from common.modeling import LocalGenerator
     lg = LocalGenerator(model, tok, True, bs, ctx.task.max_new_tokens, None)

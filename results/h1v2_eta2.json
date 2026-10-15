@@ -1,0 +1,232 @@
+{
+ "n": 60,
+ "fixed_direction_prediction": {
+  "rand@0.05": {
+   "spearman": 0.15089620820943053,
+   "pearson": 0.2550186205726141,
+   "mean_pred": 0.0006463374679525835,
+   "mean_realized": -0.010890841226412196,
+   "slope": 0.5759536494804511
+  },
+  "rand@0.2": {
+   "spearman": 0.4775986843718799,
+   "pearson": 0.5648311062162658,
+   "mean_pred": 0.0006463374679525835,
+   "mean_realized": -0.008541699954351955,
+   "slope": 0.5992635327665393
+  },
+  "caa@0.05": {
+   "spearman": 0.274793277356847,
+   "pearson": 0.3621317439070607,
+   "mean_pred": 0.002727877301490365,
+   "mean_realized": -0.019093870332862042,
+   "slope": 0.9396339293578699
+  },
+  "caa@0.2": {
+   "spearman": 0.3182727580773513,
+   "pearson": 0.46967706714151813,
+   "mean_pred": 0.002727877301490365,
+   "mean_realized": -0.020787311456144094,
+   "slope": 0.7666442657281598
+  },
+  "ngG@0.05": {
+   "spearman": 0.5989576078837254,
+   "pearson": 0.6215921604185224,
+   "mean_pred": 0.13541736407103688,
+   "mean_realized": 0.13037356588024815,
+   "slope": 0.8311105500344269
+  },
+  "ngG@0.2": {
+   "spearman": 0.7337417858694469,
+   "pearson": 0.7753061917539315,
+   "mean_pred": 0.13541736407103688,
+   "mean_realized": 0.13234643316111855,
+   "slope": 0.9021448073193369
+  },
+  "pq@0.05": {
+   "spearman": 0.34594865008407744,
+   "pearson": 0.3783216381263214,
+   "mean_pred": 0.26208218713590553,
+   "mean_realized": 0.10402483084092605,
+   "slope": 0.6386105398549846
+  },
+  "pq@0.2": {
+   "spearman": 0.5362979640153512,
+   "pearson": 0.5643818179460693,
+   "mean_pred": 0.26208218713590553,
+   "mean_realized": 0.09222189889618991,
+   "slope": 0.6980721338230995
+  }
+ },
+ "eta_split": {
+  "glob": {
+   "reliability_pearson": 0.8970769947704933,
+   "reliability_spearman": 0.6215487291545093,
+   "share_negative": 0.06666666666666667,
+   "mean_eta": 0.908914685217157,
+   "mean_var": 0.13108011881510417,
+   "rho_eta_eff_pq@0.05": 0.36651105980795035,
+   "rho_sqrt_eta_plus_eff_pq@0.05": 0.36922564701765714,
+   "rho_eta_eff_pq@0.2": 0.538187902943266,
+   "rho_sqrt_eta_plus_eff_pq@0.2": 0.536891854323047,
+   "rho_eta_eff_ngG@0.05": 0.3274168154485527,
+   "rho_sqrt_eta_plus_eff_ngG@0.05": 0.32728537381879247,
+   "rho_eta_eff_ngG@0.2": 0.32790119343527635,
+   "rho_sqrt_eta_plus_eff_ngG@0.2": 0.32865938693423036
+  },
+  "k4": {
+   "reliability_pearson": 0.7522626029303382,
+   "reliability_spearman": 0.42471010777562074,
+   "share_negative": 0.26666666666666666,
+   "mean_eta": 0.010304594105923584,
+   "mean_var": 0.13108011881510417,
+   "rho_eta_eff_pq@0.05": 0.49510948170265806,
+   "rho_sqrt_eta_plus_eff_pq@0.05": 0.4964347944295244,
+   "rho_eta_eff_pq@0.2": 0.4971095244806474,
+   "rho_sqrt_eta_plus_eff_pq@0.2": 0.5140881779705035,
+   "rho_eta_eff_ngG@0.05": 0.1269581080109985,
+   "rho_sqrt_eta_plus_eff_ngG@0.05": 0.15243646927444518,
+   "rho_eta_eff_ngG@0.2": 0.25187902029410897,
+   "rho_sqrt_eta_plus_eff_ngG@0.2": 0.26478978956824023
+  },
+  "k8": {
+   "reliability_pearson": 0.719063914824879,
+   "reliability_spearman": 0.48332155122045256,
+   "share_negative": 0.16666666666666666,
+   "mean_eta": 0.01564448350948746,
+   "mean_var": 0.13108011881510417,
+   "rho_eta_eff_pq@0.05": 0.5160609099888744,
+   "rho_sqrt_eta_plus_eff_pq@0.05": 0.5116807841669943,
+   "rho_eta_eff_pq@0.2": 0.618899412453039,
+   "rho_sqrt_eta_plus_eff_pq@0.2": 0.6291633036146858,
+   "rho_eta_eff_ngG@0.05": 0.3881854653526567,
+   "rho_sqrt_eta_plus_eff_ngG@0.05": 0.3918869780196626,
+   "rho_eta_eff_ngG@0.2": 0.3792495033639595,
+   "rho_sqrt_eta_plus_eff_ngG@0.2": 0.38529144438203095
+  },
+  "k16": {
+   "reliability_pearson": 0.7368280075453232,
+   "reliability_spearman": 0.5913515786344534,
+   "share_negative": 0.16666666666666666,
+   "mean_eta": 0.02169589318540344,
+   "mean_var": 0.13108011881510417,
+   "rho_eta_eff_pq@0.05": 0.4376458826364835,
+   "rho_sqrt_eta_plus_eff_pq@0.05": 0.4359237097925586,
+   "rho_eta_eff_pq@0.2": 0.5130628324898107,
+   "rho_sqrt_eta_plus_eff_pq@0.2": 0.5248417384726193,
+   "rho_eta_eff_ngG@0.05": 0.3841268089546699,
+   "rho_sqrt_eta_plus_eff_ngG@0.05": 0.39760327448287813,
+   "rho_eta_eff_ngG@0.2": 0.3624390447563549,
+   "rho_sqrt_eta_plus_eff_ngG@0.2": 0.37659563053313094
+  },
+  "k32": {
+   "reliability_pearson": 0.8476935334941829,
+   "reliability_spearman": 0.7080173225255921,
+   "share_negative": 0.11666666666666667,
+   "mean_eta": 0.030805402503100147,
+   "mean_var": 0.13108011881510417,
+   "rho_eta_eff_pq@0.05": 0.3656218745225937,
+   "rho_sqrt_eta_plus_eff_pq@0.05": 0.3718914003413705,
+   "rho_eta_eff_pq@0.2": 0.4442468209380895,
+   "rho_sqrt_eta_plus_eff_pq@0.2": 0.4583451090748868,
+   "rho_eta_eff_ngG@0.05": 0.3904927837158958,
+   "rho_sqrt_eta_plus_eff_ngG@0.05": 0.3993404860957697,
+   "rho_eta_eff_ngG@0.2": 0.31573097712101056,
+   "rho_sqrt_eta_plus_eff_ngG@0.2": 0.32836797735813644
+  }
+ },
+ "rho_var_eff": {
+  "pq@0.05": 0.3173659451115044,
+  "pq@0.2": 0.4281165008582239,
+  "ngG@0.05": 0.2969702193718486,
+  "ngG@0.2": 0.32892113031857,
+  "rand@0.05": -0.08083605219642591,
+  "rand@0.2": -0.21090113114853185,
+  "caa@0.05": -0.011699079749471831,
+  "caa@0.2": -0.20036992941889148
+ },
+ "partial_and_bound": {
+  "k8": {
+   "share_eta_gt_var": 0.0,
+   "median_eta_hat": 0.053272250585482336,
+   "mean_eta_hat": 0.09479941446728278,
+   "partial_rho_eta_given_var_pq@0.05": 0.43069431226379107,
+   "rho_eta_hat_pq@0.05": 0.4499277543904725,
+   "partial_rho_eta_given_var_pq@0.2": 0.49513950938562423,
+   "rho_eta_hat_pq@0.2": 0.5452473807034184,
+   "partial_rho_eta_given_var_ngG@0.05": 0.26736383814947207,
+   "rho_eta_hat_ngG@0.05": 0.34826607776697815,
+   "partial_rho_eta_given_var_ngG@0.2": 0.2275081346710842,
+   "rho_eta_hat_ngG@0.2": 0.33465316276031426
+  },
+  "k16": {
+   "share_eta_gt_var": 0.0,
+   "median_eta_hat": 0.08838461104187181,
+   "mean_eta_hat": 0.1225960224679151,
+   "partial_rho_eta_given_var_pq@0.05": 0.31951490586875325,
+   "rho_eta_hat_pq@0.05": 0.4114704907987968,
+   "partial_rho_eta_given_var_pq@0.2": 0.33679318917573325,
+   "rho_eta_hat_pq@0.2": 0.4911061890625652,
+   "partial_rho_eta_given_var_ngG@0.05": 0.2610188266751372,
+   "rho_eta_hat_ngG@0.05": 0.3793175791132197,
+   "partial_rho_eta_given_var_ngG@0.2": 0.2022410890356098,
+   "rho_eta_hat_ngG@0.2": 0.34751802612448107
+  },
+  "k32": {
+   "share_eta_gt_var": 0.0,
+   "median_eta_hat": 0.1227675250139413,
+   "mean_eta_hat": 0.1702341522150636,
+   "partial_rho_eta_given_var_pq@0.05": 0.1971215497637154,
+   "rho_eta_hat_pq@0.05": 0.34417027951336415,
+   "partial_rho_eta_given_var_pq@0.2": 0.18991481324328374,
+   "rho_eta_hat_pq@0.2": 0.42090051653443605,
+   "partial_rho_eta_given_var_ngG@0.05": 0.26649064100532377,
+   "rho_eta_hat_ngG@0.05": 0.4035861204518669,
+   "partial_rho_eta_given_var_ngG@0.2": 0.09507726946232999,
+   "rho_eta_hat_ngG@0.2": 0.3084232901560518
+  },
+  "partial_rho_pred_ngG_given_var@0.05": 0.5448163866844709,
+  "partial_rho_pred_ngG_given_var@0.2": 0.6967170536070136,
+  "partial_rho_pred_rand_given_var@0.05": 0.14982829119294788,
+  "partial_rho_pred_rand_given_var@0.2": 0.48444585375068916,
+  "partial_rho_pred_caa_given_var@0.05": 0.2831235148116115,
+  "partial_rho_pred_caa_given_var@0.2": 0.2782760960234684
+ },
+ "bootstrap_ci": {
+  "spearman_pred_ngG_eff@0.2": [
+   0.7337417858694469,
+   0.5592478605995411,
+   0.8493141756602517
+  ],
+  "partial_pred_ngG_given_var@0.2": [
+   0.6967170536070136,
+   0.48988028066680045,
+   0.8345312835182714
+  ],
+  "spearman_pred_ngG_eff@0.05": [
+   0.5989576078837254,
+   0.39540362562906806,
+   0.7528731998932473
+  ],
+  "partial_eta_k8_given_var_pq@0.2": [
+   0.49513950938562423,
+   0.17873339428174148,
+   0.7155936356727632
+  ],
+  "partial_eta_k32_given_var_pq@0.2": [
+   0.18991481324328374,
+   -0.07936083809053975,
+   0.4916456288159911
+  ],
+  "partial_eta_k8_given_var_ngG@0.2": [
+   0.2275081346710842,
+   -0.08755754424333133,
+   0.49901665780384913
+  ],
+  "spearman_var_pq@0.2": [
+   0.4281165008582239,
+   0.20908980535183377,
+   0.6062114159280184
+  ]
+ }
+}

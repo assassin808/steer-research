@@ -1,4 +1,4 @@
-"""Analyse H1 v2 (runs_h1v2/q*.json) -> ~/steer_math/results/h1v2.json + printed tables."""
+"""Analyse H1 v2 (runs_h1v2/q0*.json) -> ~/steer_math/results/h1v2.json + printed tables."""
 import glob
 import json
 import os
@@ -42,7 +42,7 @@ def loo_r2(X, y, lam=1e-3):
 
 
 def main():
-    R = [json.load(open(f)) for f in sorted(glob.glob(f"{HERE}/runs_h1v2/q*.json"))]
+    R = [json.load(open(f)) for f in sorted(glob.glob(f"{HERE}/runs_h1v2/q0*.json"))]
     n = len(R)
     res = {"n_questions": n}
     g = lambda k: np.array([r[k] for r in R], float)  # noqa: E731
@@ -124,6 +124,28 @@ def main():
             Xa = np.stack([feats[f] for f in euc + ["var", "eta_hat", "sqrt_eta"]], 1)
             P["loo_r2_euclid"] = loo_r2(Xe, eff); P["loo_r2_euclid_var"] = loo_r2(Xv, eff); P["loo_r2_euclid_var_eta"] = loo_r2(Xa, eff)
             P["loo_r2_var_eta_only"] = loo_r2(np.stack([feats["var"], feats["eta_hat"], feats["sqrt_eta"]], 1), eff)
+            # bootstrap the incremental LOO R^2 of (eta_hat, sqrt_eta) over (euclid + var)
+            rng = np.random.RandomState(1)
+            inc = []
+            for _ in range(300):
+                ii = rng.randint(0, len(eff), len(eff))
+                if eff[ii].std() == 0:
+                    continue
+                inc.append(loo_r2(Xa[ii], eff[ii]) - loo_r2(Xv[ii], eff[ii]))
+            P["delta_loo_r2_eta_over_euclid_var"] = float(P["loo_r2_euclid_var_eta"] - P["loo_r2_euclid_var"])
+            P["delta_loo_r2_boot_ci"] = [float(np.percentile(inc, 2.5)), float(np.percentile(inc, 97.5))]
+            # partial Spearman of eta_hat with efficiency controlling for Var (rank residuals)
+            from scipy.stats import rankdata
+            rv, re_, rh = rankdata(var), rankdata(eff), rankdata(eta_hat)
+            res_e = re_ - np.polyval(np.polyfit(rv, re_, 1), rv); res_h = rh - np.polyval(np.polyfit(rv, rh, 1), rv)
+            P["partial_spearman_eta_hat_given_var"] = float(pearsonr(res_e, res_h)[0])
+            nz = eta_hat > 0
+            P["n_eta_nonzero"] = int(nz.sum())
+            P["mean_eff_eta_zero"] = float(eff[~nz].mean()) if (~nz).any() else None
+            P["mean_eff_eta_nonzero"] = float(eff[nz].mean()) if nz.any() else None
+            P["pearson_sqrt_eta_eff"] = float(pearsonr(np.sqrt(eta), eff)[0])
+            P["mean_sqrt_eta"] = float(np.sqrt(eta).mean())
+            P["mean_eff"] = float(eff.mean())
             pred[key] = P
     res["prediction_of_efficiency"] = pred
     # first-order theory check for pq: predicted dT/ds = sqrt(eta) vs realized efficiency
@@ -137,7 +159,9 @@ def main():
     print("\nbound:", json.dumps(bound, indent=0))
     for k, P in pred.items():
         print(k, {f: round(x, 2) for f, x in P["spearman"].items()},
-              "LOO R2 euc/+var/+eta:", round(P["loo_r2_euclid"], 3), round(P["loo_r2_euclid_var"], 3), round(P["loo_r2_euclid_var_eta"], 3))
+              "LOO R2 euc/+var/+eta:", round(P["loo_r2_euclid"], 3), round(P["loo_r2_euclid_var"], 3), round(P["loo_r2_euclid_var_eta"], 3),
+              "dR2 CI", [round(x, 3) for x in P["delta_loo_r2_boot_ci"]], "partial rho", round(P["partial_spearman_eta_hat_given_var"], 2),
+              "eff eta=0/>0", P["mean_eff_eta_zero"], P["mean_eff_eta_nonzero"], "n>0", P["n_eta_nonzero"])
 
 
 if __name__ == "__main__":

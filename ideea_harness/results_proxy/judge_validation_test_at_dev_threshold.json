@@ -1,0 +1,15 @@
+{
+ "note": "test-split leave-one-out reference answers, judged at thresholds calibrated on the DEV split (best balanced accuracy); test json acc fields are at the default 0.5 / 0 thresholds",
+ "qwen": {
+  "threshold_from_dev": 0.9997965693473816,
+  "acc": 0.7757137942896457,
+  "bal_acc": 0.7779471948839175,
+  "n": 2907
+ },
+ "emb": {
+  "threshold_from_dev": -0.01028693914413452,
+  "acc": 0.7007223942208463,
+  "bal_acc": 0.6979916367305442,
+  "n": 2907
+ }
+}
