@@ -1,0 +1,50 @@
+{
+ "lam_rel": 3,
+ "lam": 0.012915763005945404,
+ "n_train_q": 316,
+ "n_val_q": 79,
+ "variants": {
+  "plain": {
+   "norm_g": 0.38586451007237904,
+   "cos_ngref_eucref": 0.8358991507792104,
+   "cos_ngref_ng": 0.01184167782138509,
+   "cos_eucref_euc": 0.010326575512491616,
+   "cos_ngref_ng_judged_euc": 0.002175770111464166,
+   "split_half_cos_g": 0.686778724193573,
+   "val_r_gain_per_Gnorm": {
+    "ngref": 3.058393530677152,
+    "eucref": 1.4572682598619813,
+    "ng_judged": 0.059727196273455775,
+    "euc_judged": 0.11681465584195325
+   },
+   "train_r_gain_per_Gnorm": {
+    "ngref": 4.37181266873931,
+    "eucref": 1.7700960017541063,
+    "ng_judged": 0.01114006060154405,
+    "euc_judged": 0.012483569360944514
+   }
+  },
+  "E": {
+   "norm_g": 0.4257030922303578,
+   "cos_ngref_eucref": 0.8652459505318658,
+   "cos_ngref_ng": -0.00533982525328254,
+   "cos_eucref_euc": -0.13883542813107058,
+   "cos_ngref_ng_judged_euc": -0.017782538508840737,
+   "split_half_cos_g": 0.7043332457542419,
+   "val_r_gain_per_Gnorm": {
+    "ngref": 3.5729879757266536,
+    "eucref": 1.6063603298071027,
+    "ng_judged": -0.0003899861121930741,
+    "euc_judged": -0.02496632442338554
+   },
+   "train_r_gain_per_Gnorm": {
+    "ngref": 5.130846317242857,
+    "eucref": 2.249597539098093,
+    "ng_judged": -0.10564042366224033,
+    "euc_judged": -0.18516322062140708
+   }
+  }
+ },
+ "base_logratio_r_train_mean": -8.190439954588685,
+ "base_logratio_r_train_mean_E": -8.95141514645347
+}
