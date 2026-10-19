@@ -82,6 +82,13 @@ def build(ctx, spec):
         layer, c = int(p[1]), float(p[2])
         th = unit(ctx.caa[layer]) * c * ctx.hnorm(layer)
         return ("fixed", th, layer), {"method": "cu", "layer": layer, "c": c, "norm": float(np.linalg.norm(th))}
+    if m == "fx":  # [2026-10-19 ngref fix] fx:KEY:LAYER:C, KEY in $NG_RUNS/directions_fix_L{LAYER}.npz (gm_fix.py)
+        key, layer, c = p[1], int(p[2]), float(p[3])
+        f = f"{RUNS}/directions_fix_L{layer}.npz"
+        if f not in ctx.dirs:
+            ctx.dirs[f] = dict(np.load(f))
+        th = unit(ctx.dirs[f][key]) * c * ctx.hnorm(layer)
+        return ("fixed", th, layer), {"method": "fx", "key": key, "layer": layer, "c": c, "runs": RUNS, "norm": float(np.linalg.norm(th))}
     if m in ("ngref", "eucref", "ng", "euc", "rand"):
         c = float(p[1]); layer = FIT_LAYER
         v = np.random.RandomState(1000 + int(p[2])).randn(ctx.caa.shape[1]) if m == "rand" else ctx.dirs[m]
