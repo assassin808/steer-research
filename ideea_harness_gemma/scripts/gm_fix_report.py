@@ -128,7 +128,7 @@ if __name__ == "__main__":
         key = json.load(open(f"{ROOT}/blind_fix_keys/key_pass1.json"))
         for lab, p in key["runs"].items():
             spec = json.load(open(p))["summary"]["spec"]
-            rr = next((r for s, r in runs.items() if r["path"] == os.path.abspath(p) or r["path"] == p), None)
+            rr = next((r for s, r in runs.items() if os.path.realpath(r["path"]) == os.path.realpath(p)), None)
             if rr is not None and lab in R["strict"]:
                 idx = [rr["keys"].index(q) for q in st[lab]["qs"]]
                 R["strict"][lab]["official_ti_same_q"] = float(rr["ti"][idx].mean()); R["strict"][lab]["spec"] = spec
