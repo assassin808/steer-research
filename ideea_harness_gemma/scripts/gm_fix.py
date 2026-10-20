@@ -163,9 +163,56 @@ def c_for(layer, key, targets, tag):
     return out, pts
 
 
+ABS = "I have no comment."  # base greedy answer for 284/395 dev questions
+
+
+def stage_abs(a):
+    """[POST-HOC EXPLORATORY, not pre-registered] score features of the abstention string per train/val question."""
+    import torch
+    import ng_lib as L
+    from gm_fit import ref_conts, chat_for
+    df = pd.read_csv(CSV)
+    tok, model = L.load_model(torch.float32)
+    steer = L.RowSteer(model, a.layer); d = model.config.hidden_size
+    U, LP, Q, TR = [], [], [], []
+    for sp in ("train", "val"):
+        for i in split_of(sp):
+            q = df.loc[i, "Question"]; pid = L.prompt_ids(tok, chat_for(q))
+            conts, _ = ref_conts(tok, pid, q, [ABS])
+            u, lp = L.score_features(model, steer, pid.cuda(), [c.cuda() for c in conts], d)
+            U.append(u[0]); LP.append(lp[0]); Q.append(i); TR.append(sp == "train")
+    np.savez(f"{RUNS0}/absU_L{a.layer}.npz", U=np.stack(U), lp=np.array(LP), qidx=np.array(Q), is_train=np.array(TR))
+    print("abs saved", len(U), "mean logp", float(np.mean(LP)), flush=True)
+
+
+def stage_fitabs(a):
+    """[POST-HOC EXPLORATORY] abstention-aware variants of ngref-fix, added to directions_fix_L{L}.npz as keys 'na*':
+    na{norm}{rel}neu : natural gradient of r_fix constrained to first-order d log p(ABS) = 0 (metric G+lam I);
+    na{norm}{rel}p{b}: natural gradient of r_fix - b * log p(ABS)  (b in 1, 3, 10)."""
+    f = f"{RUNS}/directions_fix_L{a.layer}.npz"; D = dict(np.load(f))
+    A_ = dict(np.load(f"{RUNS0}/absU_L{a.layer}.npz")); R = dict(np.load(f"{RUNS0}/refU_L{a.layer}.npz"))
+    G = D["G"]; d = G.shape[0]; scale = np.trace(G) / d
+    ab = A_["U"][A_["is_train"]].astype(np.float64).mean(0); abv = A_["U"][~A_["is_train"]].astype(np.float64).mean(0)
+    res = {}
+    for norm in ("sum", "len"):
+        g, _, _ = ref_grad(R, True, True, norm)
+        for rel in REL:
+            A = G + rel * scale * np.eye(d); Ag, Aa = np.linalg.solve(A, g), np.linalg.solve(A, ab)
+            dirs = {f"na{norm}{rel:g}neu": Ag - (ab @ Ag) / (ab @ Aa) * Aa}
+            for b in (1, 3, 10):
+                dirs[f"na{norm}{rel:g}p{b}"] = np.linalg.solve(A, g - b * ab)
+            for k, w in dirs.items():
+                D[k] = w; nw = np.sqrt(w @ G @ w)
+                res[k] = {"dlogp_abs_train_per_Gnorm": float(w @ ab / nw), "dlogp_abs_val_per_Gnorm": float(w @ abv / nw),
+                          "dr_train_per_Gnorm": float(w @ g / nw), "cos_nf": float(w @ D[f"nf{norm}{rel:g}"] / np.linalg.norm(w) / np.linalg.norm(D[f"nf{norm}{rel:g}"]))}
+            w0 = D[f"nf{norm}{rel:g}"]; res[f"nf{norm}{rel:g}"] = {"dlogp_abs_train_per_Gnorm": float(w0 @ ab / np.sqrt(w0 @ G @ w0))}
+    tmp = f + ".tmp.npz"; np.savez(tmp, **D); os.replace(tmp, f)
+    json.dump(res, open(f"{RUNS}/fit_abs_L{a.layer}.json", "w"), indent=1); print(json.dumps(res, indent=1))
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["refs", "fit", "calib", "cfor"])
+    ap.add_argument("stage", choices=["refs", "fit", "calib", "cfor", "abs", "fitabs"])
     ap.add_argument("--layer", type=int, default=13); ap.add_argument("--max_q", type=int, default=0)
     ap.add_argument("--suffix", default=""); ap.add_argument("--tag", default="")
     ap.add_argument("--keys", nargs="*", default=[]); ap.add_argument("--targets", nargs="*", type=float, default=[])
@@ -178,4 +225,4 @@ if __name__ == "__main__":
             specs += [f"fx:{k}:{a.layer}:{c:g}" for c in cs_]
         print(" ".join(specs))
     else:
-        {"refs": stage_refs, "fit": stage_fit, "calib": stage_calib}[a.stage](a)
+        {"refs": stage_refs, "fit": stage_fit, "calib": stage_calib, "abs": stage_abs, "fitabs": stage_fitabs}[a.stage](a)
