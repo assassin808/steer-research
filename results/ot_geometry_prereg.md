@@ -155,3 +155,11 @@ Heads: same top-24 + random-8. Space: z (primary), pw32 (sensitivity).
 - D1 (after A2, before any OT/flow output was read): because OT is demoted to a comparison column and CPU fairshare is low,
   the OT array was cut to spaces {z, pw8} (raw and pw32 dropped) with 10 reps for G-shared/R-shift (5 for G-sep/Perm)
   instead of 20/10. Trait-flow spaces: z (primary), pw32.
+- D2 (after seeing the first trait-flow outputs; POST HOC, labelled as such in the report):
+  (i) the A2 horizon 3·|Δμ| is too short — on every head finished so far no path (flow or straight line) leaves the POS
+  kNN band and s never saturates, while IDEEA's own steps are t ≈ 5–20·|Δμ| (OT smoke). Boundary analysis 4 is re-run
+  with a two-phase path: 150 steps of 0.02·|Δμ| (unchanged) then 0.25·|Δμ| steps to 30·|Δμ|; same exit/saturation/vanish
+  definitions; IDEEA α ↔ arc length via t = α·naive_std/|Δμ_raw|. No nulls for the boundary (none were preregistered).
+  (ii) grouped CV picked α = 10, the edge of the preregistered grid, on every head, and the z-space MLP had worse
+  held-out log-loss than LR. Sensitivity: α grid extended to {10, 30, 100, 300} (z space), turning + G-shared null
+  (5 reps) recomputed. The preregistered verdict uses the original run; the sensitivity is reported beside it.
