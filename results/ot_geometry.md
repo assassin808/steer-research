@@ -165,7 +165,7 @@ What this column shows:
 - Held-out predictors of the OT displacement: kNN-local .39, Δμ .22, IDEEA npn/min_perp .19.
   - Under the R-shift null the kNN-local and Δμ predictors score .42 / .34, so the kNN advantage is partly smoothing.
   - IDEEA beats Δμ on 0/24 heads.
-- The geodesic/Euclid ratio is degenerate in 256-d (1.00); in pw8 it is 1.24 vs 1.00.
+- The geodesic/Euclid ratio is degenerate in 256-d (1.00); in pw8 it is 1.24 vs 1.00 (curved on 17/24 heads).
 - Power (synthetic, real n): R²_s50 detects a mode-dependent field at |Δμ| = 3 when the field's true R² ≤ 0.85. At |Δμ| = 1 it gave 1/4 false positives.
 
 ## Post-hoc: question pairing (not preregistered)
