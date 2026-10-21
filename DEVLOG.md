@@ -123,3 +123,22 @@ Primary object: a trait vector field V on the activation manifold, dx/dt = P_T(x
 - Steering = integrating the flow. Curvature = turning of the integral curves. Boundary = where s saturates or the curve leaves the support. Composition = commutation of two fields.
 - Special cases: linear s → constant field (ITI/probe, flat). IDEEA nearest_pos_neg ≈ piecewise-constant hard-assignment estimate. OT = a different flow (min-kinetic-energy transport), kept only as a baseline column.
 The running geometry agent was redirected accordingly; it must update its prereg before the new analyses.
+- TRIED · 2026-10-20 · bridge code smoke tests (jobs 6592766 OOM at bs16 -> bs8; 6597012 key bug; 6597169 ok up to O eval spec). Wiring checks PASS: our file-based IDEEA path == IDEEA class (original nc2 file, identical KL to 17 digits); hard-centroid kernel == IDEEA nearest_pos_neg nc4 (identical). FINDING: lam_rel=1e6 gives cos 1-1e-10 with plain yet greedy texts differ on ~5/16 dev items and first-token KL differs up to 25% -> bf16 rounding of 1e-5-relative direction changes is a real noise floor for paired comparisons; pre-registered '1e6 -> identical texts' check therefore fails for a numerical reason; added lam_rel=1e12 (bitwise-identity check) and will report the 1e6 divergence as a noise floor.
+- INFRA · 2026-10-21 · br_main 6593301 OOM (bs16 in loaded code) in val samples; train samples saved. bs -> 4 for score features, arm-O backward chunked (refs 6, samples 4), expandable_segments. Relaunched chain: main 6678805 -> dev 6678812/6678815 -> opt 6678818/6678823.
+
+## 2026-10-21 — OT / trait-flow geometry of IDEEA head activations (Gemma-2-2B TQA; CPU only; results/ot_geometry.md)
+- PREREGISTERED · results/ot_geometry_prereg.md. A1: raw OT flatness R² has no power in 256-d (synthetic), so the statistic was switched to kNN-smoothed R²_s50. A2 (PI reframe): the trait flow V = P_T∇s (s = LR / tanh-MLP log-ratio, unpaired) is primary and OT is a baseline column. D1–D4 are deviations, all labelled post hoc.
+- DATA · dev split only (fit = IDEEA train q, held-out = val q, 79 q); IDEEA top-24 heads + 8 random; no GPU.
+- FOUND · Prereg verdict = FLAT (no curvature detected).
+  - Gate: in z the MLP is not better than LR on held-out (0/24; α hit the grid edge). In pw32 flow turning ≤ the Gaussian null on 24/24.
+  - POST HOC α=100: s is mildly nonlinear (+0.013 nats, 15/24) and the flow turns 10°/|Δμ| vs 0.03° under the Gaussian null. BUT it turns 14° under the R-shift null (real data shape, pure translation); data exceeds that null on only 2–3/24 heads. The turning is explained by non-Gaussian shape → v1's "weakly curved" claim was withdrawn after review. The tilted-empirical null depends on its jitter bandwidth (3–22°), so it is uninformative.
+- FOUND · Agreement with the local field (z): probe w .78 > Δμ .43 > IDEEA npn .34 > OT .10. IDEEA does not track the local field better than Δμ.
+- FOUND · Boundary (POST HOC D4): not trait-specific.
+  - Exit from the data-support kNN band (96% of NEG starts are already inside the "POS band"): +Δμ 6.5|Δμ|, random directions 5.0, −Δμ 4.9.
+  - In Euclidean displacement, projected flow 7.0 and unprojected 5.9 vs straight +Δμ 6.5. The prereg prediction "straight leaves sooner" holds only in arc length (a turning artefact) → FAIL.
+  - IDEEA α=4 ≈ 5|Δμ| and α=15 ≈ 19|Δμ|: order-of-magnitude consistent only.
+- FOUND · OT column: R²_s50 .50 vs R-shift .81 / G-shared .64 → transport map non-constant on 22/24 heads, but OT displacement ⟂ trait gradient (cos .10).
+- TRIED · Opus adversarial review: 13 objections. Fatal for v1: R-shift null, kNN-radius boundary. All handled in v2.
+- LESSON · For "is the trait field flat", the null must keep the data's shape: Gaussian nulls make any non-Gaussian data look curved. Arc-length comparisons between turning and straight paths are biased.
+- NEXT · Preregistered replication on fresh questions: α=100, R-shift as primary null, ≥20 reps, full-dim whitened metric. Paper C reach must be behavioural (KL / judged answers along t), not kNN support. Composition is not done (no second label set cached).
+- TRIED · Opus check of the boundary section only: numbers match the JSON and the exit code is correct. Edits applied: headline hedged to "largely not trait-specific" (+Δμ beats random directions 24/24 but by only 1.25|Δμ|); projected flow vs straight reported as paired +0.07 (12/24), i.e. a tie within grid resolution; unprojected early exit ≈ the probe-w direction; the all-data band gives the same result.

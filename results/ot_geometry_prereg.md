@@ -163,3 +163,14 @@ Heads: same top-24 + random-8. Space: z (primary), pw32 (sensitivity).
   (ii) grouped CV picked α = 10, the edge of the preregistered grid, on every head, and the z-space MLP had worse
   held-out log-loss than LR. Sensitivity: α grid extended to {10, 30, 100, 300} (z space), turning + G-shared null
   (5 reps) recomputed. The preregistered verdict uses the original run; the sensitivity is reported beside it.
+- D3 (POST HOC, after the v1 draft, written before running): the G-shared null may be "too easy" for the α=100 MLP
+  (any non-Gaussian shape could bend it). Added null **T-tilt**: pool = fit rows (POS∪NEG, z); s_lin = fitted LR logit;
+  NEG_null ~ pool with weights ∝ 1−σ(s_lin), POS_null ~ pool with weights ∝ σ(s_lin) (with replacement, n−/n+ as data),
+  plus Gaussian jitter of 0.1 × the median 10-NN distance ⇒ log p+/p− ≈ s_lin (linear, constant trait field) with the
+  data's own shape and question clustering. Starts = real held-out NEG. Also R-shift null at the ext α (3 reps).
+  Rule (fixed now): curved if data turning@1 > T-tilt 97.5% (5 reps) on ≥ 50% of top-24 heads.
+  D3 addendum: after seeing that the T-tilt null (jitter 0.1) turns as much as the data on the first heads, a jitter-0.5 variant
+  is run as a sensitivity (resampling duplicates could make the null MLP bumpy). Both reported.
+- D4 (POST HOC, after the Opus review): boundary controls on all heads (z, prereg α=10 MLP not needed): straight lines
+  along +Δμ, −Δμ, 5 random unit directions, 5 random directions in the top-10 pooled PCs; projected trait flow (and linear-s
+  projected flow) with exit measured in EUCLIDEAN displacement |x_ℓ − x₀| (removes the arc-length confound).
