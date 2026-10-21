@@ -130,3 +130,24 @@ objective of ngref = I_sel vs K_sel; metric of ngref = K_inf vs K_sel).
 - Strict labeller = one model family (Sonnet), test-retest only.
 - The head Fisher uses fresh samples (not those of the residual G); G_H (6144^2) from 5056 samples is rank-deficient: the ridge grid covers this.
 - The F kernel arm is new code with per-step kernel evaluation; its exact limits are verified in code, but its tau grid is coarse.
+
+## 9. Amendment (coordinator, 2026-10-20, still before any run): directly optimised steering vector with a KL leash (arm O)
+First-principles formulation: maximise J_beta(delta) = mean_q [ mean_{kept correct refs} log p_delta(a+|q) - mean_{kept incorrect refs} log p_delta(a-|q) ]
+- beta x KLhat(delta), KLhat = mean over TRAIN questions and over the per-token positions of 16 unlabeled temperature-1 base samples per question
+(the samples of the existing ngref G estimate) of KL(p_delta(.|q, y<t) || p_0(.|q, y<t)) (prefixes from p_0; agrees with KL(p_delta||p_0) to
+second order, whose quadratic expansion is 1/2 delta^T G delta). Relation: one natural-gradient step at delta = 0 with trust radius eps is the first
+iterate of this problem; G is only the quadratic expansion of the leash.
+- Site: residual L13 (the dev-selected layer of ngref-fix/eucref-fix; no new layer grid), same position protocol (last position of every call;
+teacher-forced positions P-1..P+T-2). Head site: NOT run (training at 24 heads x 13 layers is not cheap here; stated as not done).
+- Variants: O1 global delta, contrastive J; O2 global delta, correct-only J (no incorrect-ref term); O3/O4 K = 2 / 4 soft vectors with a learned
+softmax gate on the normalised site activation at the current position, delta(x) = sum_k softmax(W x/||x||)_k delta_k (W carries the
+temperature), contrastive J.
+- Optimisation (fixed now): delta = hnorm(13) x z; Adam lr 3e-3 on (z, W); 8 train questions per step; 3 epochs; init z = 0 (O1/O2),
+z_k, W ~ N(0, 1e-3) (O3/O4, breaks symmetry); beta in {1, 10, 100}; checkpoints every half epoch; early stopping by the label-free
+VAL objective J_beta (val refs + val unlabeled samples). Supervision = TRAIN refs (non-informative removed) + unlabeled samples only.
+- Dev: each (variant, beta) final delta scaled by a common factor (gate unchanged) to dev target KLs {0.1,0.3,0.6,1.0} (label-free calibration
+as §4) = 12 dev configs per variant; same dev rule picks beta; test at matched dev KL 0.518 for every beta (official) and strict labels for
+the dev-selected beta of O1..O4 (adds 4 strict runs, 25 in total).
+- Outcome meaning: if O1 (no G, full nonlinear objective + KL) beats ngref-fix and matches/exceeds eucref-fix, the failure of ngref is the
+quadratic metric, not the objective; if O1 also hedges/negates (refusal, double-negation rate >= ngref-fix) the objective itself rewards the
+exploit. Hedging exploit is reported for every O run (refusal rate, double-negation rate, words).
