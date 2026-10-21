@@ -142,3 +142,37 @@ The running geometry agent was redirected accordingly; it must update its prereg
 - LESSON · For "is the trait field flat", the null must keep the data's shape: Gaussian nulls make any non-Gaussian data look curved. Arc-length comparisons between turning and straight paths are biased.
 - NEXT · Preregistered replication on fresh questions: α=100, R-shift as primary null, ≥20 reps, full-dim whitened metric. Paper C reach must be behavioural (KL / judged answers along t), not kNN support. Composition is not done (no second label set cached).
 - TRIED · Opus check of the boundary section only: numbers match the JSON and the exit code is correct. Edits applied: headline hedged to "largely not trait-specific" (+Δμ beats random directions 24/24 but by only 1.25|Δμ|); projected flow vs straight reported as paired +0.07 (12/24), i.e. a tie within grid resolution; unprojected early exit ≈ the probe-w direction; the all-data band gives the same result.
+
+## 2026-10-21
+- TRIED · 2026-10-20/21 · PoC v3.1. Pre-registered in results/poc_v31_design.md (commit 90cfd69) before any run.
+  - Coordinate: s = per-token KL arc length along a norm-normalised persona vector (L14; evil L20). Levels equally
+    spaced in s up to a DEV fluency cap.
+  - 172 fresh own-trait questions; thresholded 3-option Qwen judge; blind Sonnet labels (180 items per trait, two
+    passes, plus optimism pass 3 after review).
+  - Jobs 6592056/6592599/6597187/6598449/6598975, 2.1 GPU-h.
+- FOUND · PoC v3.1 W1 (confirmatory) PASSES K0-K6 for sycophancy and optimism on both vector sets.
+  - Qwen ≈ Claude ρ 0.85 / 0.75-0.79; Claude endpoint d 0.72 / 1.45.
+  - TEST sqrt(2KL) steps even to ±7%; T rises 0.32 → 0.71-0.77 (syco) and 0.15 → 0.74-0.76 (opt; concave, saturating
+    near the pos-prompt level).
+  - Caveats: T(s) is a population rate of near-binary verdicts. K2/K3 cannot tell path shapes apart. Claude confirms
+    the endpoints, not the shape. Sycophancy has a length confound at set B's last step.
+  - Evil: P(on) 0 → 0.09 (Qwen) / 0.18 (Claude) at s_max, against 0.31 for the pos-prompt: a probabilistic switch.
+- FOUND · v3.1 W2/W3 (pre-registered replication) FAILED: the v1/v2 depth effect does not replicate on fresh own-trait
+  questions with response-token directions.
+  - Cross/within-question cosine ratio is flat at 0.51-0.61 across layers 3-24.
+  - Cluster steering never beats global (gap −0.04..0.00). This is a null with uncontrolled cluster-estimator noise
+    (clusters of 1-2 questions).
+- FOUND · v3.1 A2 (confirmatory): the score-function first-order spill-over prediction from unsteered samples
+  correlates with observed spill-over, ρ 0.36 [0.10, 0.61] (passes). But it does not beat the pre-registered
+  baselines (Euclid × own steerability 0.79, or 0.61 split-half; covariance 0.47) or a headroom baseline (0.34).
+  H2 is not supported.
+- FOUND · v3.1 A1/A3 (exploratory).
+  - The grid interaction is dominated by ceiling effects of the bounded score.
+  - The optimism vector makes the model say "I completely agree" and then contradict pessimistic users; both judges
+    score this as sycophancy (a judge-construct issue).
+  - The first-order least-interference correction (β from 8 DEV questions) fails: wrong sign or size, it overcorrects,
+    and the comparison is at unmatched s.
+- TRIED · Adversarial Opus review of v3.1: no code bug; seven over-claims fixed (see results/poc_v31.md, Review).
+- NEXT · For W, s works for 2 traits: use it as the intensity axis, but measure per-answer graded scores (Claude or a
+  better judge) if the shape matters. For A, the sycophancy judge must separate stated agreement from substance; analyse
+  the grid on the logit scale; re-test W3 with shrinkage or norm-matched cluster directions before any IDEEA-depth claim.
