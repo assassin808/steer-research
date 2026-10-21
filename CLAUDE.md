@@ -6,8 +6,9 @@ Reply to the user in Chinese only.
 
 ## Hard rules (each one comes from a mistake we already made)
 
-1. **Model choice.** Experiment design, implementation, analysis and review run on Opus. Sonnet is allowed only for pure
-   job-watching / file copying. (The Qwen ngref track-1 run and the first unified Gemma run were Sonnet-run and had to be redone.)
+1. **Model choice.** Opus for experiment design, new-method code, analysis and review (anything feeding a claim).
+   Sonnet or Haiku for routine babysitting (job watching, file copying, running existing scripts unchanged, log formatting).
+   (The Qwen ngref track-1 run and the first unified Gemma run were Sonnet-run and had to be redone.)
 2. **Read the baseline's code before claiming a relation to it.** IDEEA (`~/ext/IDEEA/methods/ideea.py`, read-only):
    KMeans separately on POS and on NEG head activations — **no per-question pairing**. `min_perp`/`nearest_cluster` match
    neg↔pos clusters by a QAP that maximises *cosine coherence of the matched directions* (not a transport cost).

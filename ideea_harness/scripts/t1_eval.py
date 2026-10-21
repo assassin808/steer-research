@@ -15,6 +15,7 @@ Spec strings (method:param[:seed]):
   rand:C:SEED          random Gaussian direction, norm C * hnorm
   ngkl:EPS             global ng direction, per-input norm s.t. 1/2 v^T G_x v = EPS (G_x: local sequence Fisher)
   ngx:EPS              per-input direction (G_x + lam I)^-1 g, per-input norm s.t. 1/2 v^T G_x v = EPS
+  ngref:C / eucref:C   judge-free: (G+lam I)^-1 g_ref / g_ref, g_ref = grad of mean log p(correct refs) - mean log p(incorrect refs) (ngref_fit.py); ...E: refs + stop token
   caakl:EPS            CAA direction with the same per-input KL calibration (control for ngkl)
 hnorm = mean L2 norm of the layer-L residual at the last token over IDEEA's contrast prompts.
 G_x = 0.5 * (within-sample Fisher from 16 unlabelled base samples at x) + 0.5 * global G (fixed shrinkage, not tuned).
@@ -64,6 +65,8 @@ class Ctx:
         acts = pd.read_pickle(activations_path("truthfulqa", MODEL_NAME, "residual"))
         self.hnorm = float(np.mean([np.linalg.norm(v) for v in acts[f"layer_{layer}"]]))
         self._Gx = None
+        ref = f"{RUNS}/directions_ref_L{layer}.npz"
+        self.ref = dict(np.load(ref)) if os.path.exists(ref) else {}
 
     def Gx(self, key):
         """Blended local metric at test question `key` (unlabelled samples only)."""
@@ -111,14 +114,16 @@ def build(ctx, model, spec):
     if m in ("iti", "ideea"):
         meth = ITI(48, val) if m == "iti" else IDEEA("nearest_pos_neg", FixedClusters(4), 48, val)
         return ("ideea_hooks", meth), {"method": m, "alpha": val, "k": 48}
-    if m in ("caa", "ng", "euc", "rand", "ngE", "eucE", "scaa"):
+    if m in ("caa", "ng", "euc", "rand", "ngE", "eucE", "scaa", "ngref", "eucref", "ngrefE", "eucrefE"):
         if m == "rand":
             seed = int(parts[2]) if len(parts) > 2 else 0
             v = np.random.RandomState(1000 + seed).randn(len(ctx.g))
         elif m == "scaa":
             v = np.load(f"{RUNS}/scaa_L{ctx.layer}.npz")["v"]
         else:
-            v = {"caa": ctx.caa, "ng": ctx.ng, "euc": ctx.g, "ngE": ctx.ngE, "eucE": ctx.gE}[m]
+            v = {"caa": ctx.caa, "ng": ctx.ng, "euc": ctx.g, "ngE": ctx.ngE, "eucE": ctx.gE}.get(m)
+            if v is None:
+                v = ctx.ref[m]
         th = unit(v) * val * ctx.hnorm
         return ("fixed", th), {"method": m, "c": val, "norm": float(np.linalg.norm(th)),
                                "pred_kl_globalG": float(0.5 * th @ ctx.G @ th)}
