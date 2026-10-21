@@ -150,3 +150,8 @@ Written before any trait-flow code was run. OT analyses (a)–(e) above continue
 5. **Composition**: SKIPPED — no second label set is cached for Gemma (only TruthfulQA); a new trait would need a GPU
    extraction and a bridge experiment holds the GPUs. Noted as not done.
 Heads: same top-24 + random-8. Space: z (primary), pw32 (sensitivity).
+
+## Deviation log
+- D1 (after A2, before any OT/flow output was read): because OT is demoted to a comparison column and CPU fairshare is low,
+  the OT array was cut to spaces {z, pw8} (raw and pw32 dropped) with 10 reps for G-shared/R-shift (5 for G-sep/Perm)
+  instead of 20/10. Trait-flow spaces: z (primary), pw32.

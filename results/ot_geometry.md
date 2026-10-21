@@ -1,19 +1,25 @@
-# Is the NEG→POS transport flat? OT geometry of IDEEA's head activations (Gemma-2-2B, TruthfulQA)
+# Is steering space flat? Trait flows (and OT as a baseline) on IDEEA's head activations (Gemma-2-2B, TruthfulQA)
 
-**Status: PARTIAL. Jobs queued (CPU array 6593005, power 6593029); numbers below are setup and smoke tests only.**
-Prereg: `results/ot_geometry_prereg.md` (+ amendment A1). Code: `ot_geometry/`.
+**Status: PARTIAL. CPU arrays queued: trait flow 6595081 (primary), OT baseline 6595082, power 6593029.**
+Prereg: `results/ot_geometry_prereg.md` (A1 power amendment, A2 trait-flow reframe, deviation D1). Code: `ot_geometry/`.
 
-## Setup (done)
-- Data = the IDEEA cache `head.pkl` restricted to the development split (395 questions, 3049 rows: 1415 POS, 1634 NEG).
-  Fit = IDEEA `train` questions (2427 rows); held-out = IDEEA `val` questions (622 rows, 79 q). Test questions were never loaded.
-- Heads = IDEEA top-24 (ITI val-accuracy ranking, paper K=24) + 8 random controls (`ot_geometry/heads.json`).
-- No GPU used (activations were cached).
+## Setup
+- Data = IDEEA cache `head.pkl`, development split only (395 q, 3049 rows: 1415 POS, 1634 NEG). Fit = IDEEA `train`
+  questions (2427 rows); held-out = IDEEA `val` questions (622 rows, 79 q). Test questions never loaded. No GPU used.
+- Heads = IDEEA top-24 (ITI val-accuracy ranking, paper K = 24) + 8 random controls (`ot_geometry/heads.json`).
+- Primary object (A2): trait score s = log-ratio classifier (LR; tanh MLP), flow V = P_T ∇s / |P_T ∇s|.
+  OT barycentric displacement is now only a comparison column.
 
 ## Early methodological finding (synthetic, before real data)
-The raw flatness statistic R² = ||mean d||²/mean||d||² **cannot detect curvature in 256-d at n≈10³**: finite-sample
-matching noise (≈ 2·dim per point) dominates the field. A 2-mode field with true R² = 0.5 gave 0.017 vs flat-null 0.019.
-A kNN-smoothed field (average d over 50 NEG neighbours) does detect it (0.35 vs null min 0.48) and stays inside the
-null for flat data. The primary statistic was switched to R²_s50 before any real-data run (amendment A1).
+The raw OT flatness R² cannot detect curvature in 256-d at n ≈ 10³ (true field R² 0.5 → 0.017 vs flat-null 0.019);
+a kNN-smoothed field can (0.35 vs null min 0.48). Primary OT statistic switched to R²_s50 before any real run.
 
-## Smoke test (L13H5, pw8 space, 2 null reps; not a result)
-R²_s50 0.64 vs translation nulls ≈ 0.93 and the affine null 0.70; kNN-local predictor cos 0.78 vs mean-diff 0.58.
+## Post-hoc exploratory: the de-facto question pairing (not preregistered)
+POS and NEG rows of one question share its context. Per-question displacement δ_q = mean POS_q − mean NEG_q
+(z space, 355 questions with ≥ 2 of each), split-half cross-product to remove within-question noise:
+share of the field's second moment that is the constant shift, R²_pair = (mean δ^A)·(mean δ^B) / mean(δ^A_q·δ^B_q):
+- top-24 heads: median ≈ 0.13 (range 0.05–0.18); mean cos(δ_q, Δμ) 0.15–0.30;
+- random heads: 0.01–0.10.
+So per question, the "correct minus incorrect" shift is mostly NOT the global mean difference. Caveat: δ_q also
+contains answer-content differences that are not "truth" (the correct and incorrect reference answers say different
+things), so this bounds the constant share from below rather than measuring curvature of a trait field.
