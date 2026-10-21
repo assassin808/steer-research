@@ -8,13 +8,14 @@ import matplotlib.pyplot as plt
 OUT = "/home/yang0531/scratch/klflow_out"; RES = "/home/yang0531/scratch/steer_live/results"
 HJ = json.load(open("/home/yang0531/scratch/steer_live/ot_geometry/heads.json"))
 TOP = [tuple(h) for h in HJ["top24"]]; RND = [tuple(h) for h in HJ["random8"]]
-COL = {"straight_dmu": "#52514e", "straight_w": "#6250d6", "frozen_grad_s": "#eb6834", "guid_kde_k0.25": "#86b6ef",
-       "guid_kde_k1.0": "#2a78d6", "guid_kde_k4.0": "#104281", "guid_dsm_k0.25": "#7fd6b3", "guid_dsm_k1.0": "#1baf7a",
-       "guid_dsm_k4.0": "#0b6b4a", "particle_kl": "#e87ba4"}
-LAB = {"straight_dmu": "straight Δμ", "straight_w": "straight probe w", "frozen_grad_s": "frozen ∇s",
-       "guid_kde_k0.25": "guidance KDE k=.25", "guid_kde_k1.0": "guidance KDE k=1", "guid_kde_k4.0": "guidance KDE k=4",
-       "guid_dsm_k0.25": "guidance DSM k=.25", "guid_dsm_k1.0": "guidance DSM k=1", "guid_dsm_k4.0": "guidance DSM k=4",
-       "particle_kl": "particle KL flow"}
+COL = {"straight_dmu": "#52514e", "straight_w": "#6250d6", "frozen_grad_s": "#eb6834"}
+LAB = {"straight_dmu": "straight Δμ", "straight_w": "straight probe w", "frozen_grad_s": "frozen ∇s"}
+for hv, shade in [("cv", 0), ("sm", 1)]:
+    for k, ck in zip(["0.25", "1.0", "4.0"], [("#86b6ef", "#3987e5"), ("#2a78d6", "#1c5cab"), ("#104281", "#0d366b")]):
+        COL[f"guid_kde_k{k}_{hv}"] = ck[shade]; LAB[f"guid_kde_k{k}_{hv}"] = f"guidance KDE k={k} h_{hv}"
+    for k, ck in zip(["0.25", "1.0", "4.0"], [("#7fd6b3", "#5cc79d"), ("#1baf7a", "#199e70"), ("#0b6b4a", "#08563b")]):
+        COL[f"guid_dsm_k{k}_{hv}"] = ck[shade]; LAB[f"guid_dsm_k{k}_{hv}"] = f"guidance DSM k={k} σ_{hv}"
+    COL[f"particle_kl_{hv}"] = ["#e87ba4", "#d55181"][shade]; LAB[f"particle_kl_{hv}"] = f"particle KL flow h_{hv}"
 plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 150})
 rows = {}
 for f in glob.glob(f"{OUT}/p2/*.json"):
@@ -39,25 +40,32 @@ for space in ["z", "pw32"]:
             bi = ["0.5", "1.0", "2.0"].index(b)
             gap = [r["paths"]["straight_dmu"]["summary"][b]["min"] - min(r["paths"][k]["summary"][b]["min"] for k in GUID) for r in R]
             best = [min(GUID, key=lambda k: r["paths"][k]["summary"][b]["min"]) for r in R]
-            gap_m = [r["paths"]["straight_dmu"]["summary"][b]["min"] - min(r["paths"][k]["summary"][b]["min"] for k in ["guid_kde_k1.0", "particle_kl"]) for r in R]
-            pb["P2b"] = dict(frac_guid_below_dmu=float(np.mean([x > 0 for x in gap])), frac_matched_below_dmu=float(np.mean([x > 0 for x in gap_m])),
+            MATCH = {hv: [f"guid_kde_k1.0_{hv}", f"particle_kl_{hv}"] for hv in ["cv", "sm"]}
+            gap_hv = {hv: [r["paths"]["straight_dmu"]["summary"][b]["min"] - min(r["paths"][k]["summary"][b]["min"] for k in GUID if k.endswith(hv)) for r in R] for hv in ["cv", "sm"]}
+            gap_m = {hv: [r["paths"]["straight_dmu"]["summary"][b]["min"] - min(r["paths"][k]["summary"][b]["min"] for k in MATCH[hv]) for r in R] for hv in ["cv", "sm"]}
+            pb["P2b"] = dict(frac_guid_below_dmu=float(np.mean([x > 0 for x in gap])),
+                             frac_guid_below_dmu_by_h={hv: float(np.mean([x > 0 for x in gap_hv[hv]])) for hv in gap_hv},
+                             frac_matched_below_dmu={hv: float(np.mean([x > 0 for x in gap_m[hv]])) for hv in gap_m},
+                             gap_med={hv: float(np.median(gap_hv[hv])) for hv in gap_hv},
                              best_method_counts={k: best.count(k) for k in set(best)})
             sig = {}
             for kind in ["rshift", "gshared"]:
-                ok = [];
-                for r, gm, gg in zip(R, gap_m, gap):
-                    nl = r.get("nulls", {}).get(kind, [])
-                    if not nl:
-                        continue
-                    ng = [x["straight_dmu"][b]["min"] - min(x["guid_kde_k1.0"][b]["min"], x["particle_kl"][b]["min"]) for x in nl]
-                    q = np.quantile(ng, .975); ok.append((gg > q, gm > q, len(nl), float(np.median(ng)), gm))
-                if ok:
-                    sig[kind] = dict(frac_gap_sig=float(np.mean([o[0] for o in ok])), frac_matched_gap_sig=float(np.mean([o[1] for o in ok])),
-                                     n=len(ok), reps=int(np.median([o[2] for o in ok])), null_gap_med=float(np.median([o[3] for o in ok])),
-                                     data_matched_gap_med=float(np.median([o[4] for o in ok])))
-                    # null shape: overshoot/plateau of dmu & guidance under null
+                sig[kind] = {}
+                for hv in ["cv", "sm"]:
+                    ok = []
+                    for r, gm, gg in zip(R, gap_m[hv], gap_hv[hv]):
+                        nl = r.get("nulls", {}).get(kind, [])
+                        if not nl:
+                            continue
+                        ng = [x["straight_dmu"][b]["min"] - min(x[f"guid_kde_k1.0_{hv}"][b]["min"], x[f"particle_kl_{hv}"][b]["min"]) for x in nl]
+                        q = np.quantile(ng, .975); ok.append((gg > q, gm > q, len(nl), float(np.median(ng)), gm, gm > 0 and gm > q))
+                    if ok:
+                        sig[kind][hv] = dict(frac_gap_sig=float(np.mean([o[0] for o in ok])), frac_matched_gap_sig=float(np.mean([o[1] for o in ok])),
+                                             n=len(ok), reps=int(np.median([o[2] for o in ok])), null_gap_med=float(np.median([o[3] for o in ok])),
+                                             data_matched_gap_med=float(np.median([o[4] for o in ok])))
+                if any(r.get("nulls", {}).get(kind) for r in R):
                     sh = {}
-                    for k in ["straight_dmu", "frozen_grad_s", "guid_kde_k1.0", "particle_kl"]:
+                    for k in ["straight_dmu", "frozen_grad_s", "guid_kde_k1.0_cv", "particle_kl_cv", "guid_kde_k1.0_sm", "particle_kl_sm"]:
                         sh[k] = dict(frac_plateau=float(np.mean([np.mean([x[k][b]["plateau"] for x in r["nulls"][kind]]) for r in R if r.get("nulls", {}).get(kind)])),
                                      frac_overshoot=float(np.mean([np.mean([x[k][b]["overshoot"] for x in r["nulls"][kind]]) for r in R if r.get("nulls", {}).get(kind)])),
                                      min_over_start=float(np.median([np.median([x[k][b]["min"] / x[k][b]["start"] for x in r["nulls"][kind]]) for r in R if r.get("nulls", {}).get(kind)])))
@@ -90,7 +98,11 @@ for space in ["z", "pw32"]:
     for k in LAB:
         D = np.array([r["paths"][k]["curve"]["disp"] for r in R]); Mm = np.array([[x[1] / r["paths"][k]["curve"]["mmd"][0][1] for x in r["paths"][k]["curve"]["mmd"]] for r in R])
         Sv = np.array([r["paths"][k]["curve"]["s"] for r in R]); Ia = np.array([r["paths"][k]["curve"]["in_all"] for r in R])
-        ls = "-" if k.startswith(("straight", "frozen", "particle")) or k.endswith("1.0") else ":"
+        if not all(k in r["paths"] for r in R):
+            continue
+        if not (k.startswith(("straight", "frozen")) or k.endswith("_sm") or k.startswith("particle")):
+            continue
+        ls = "-" if k.startswith(("straight", "frozen", "particle")) or "k1.0" in k else ":"
         lw = 2 if ls == "-" else 1.2
         x = np.median(D, 0)
         axs[0].plot(x, np.median(Mm, 0), ls, color=COL[k], lw=lw, label=LAB[k])
