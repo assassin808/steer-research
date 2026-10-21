@@ -115,3 +115,11 @@ Formulation: steering = transport map T from the NEG distribution to the POS dis
   Predict: hedging/gibberish onset ≈ where distance-to-POS-kNN leaves the in-distribution range.
 - Composition (A): two trait fields compose iff their flows commute (Lie bracket ≈ 0).
 Rules: ~/steer_math/CLAUDE.md written today (pitfall list). Memory: research agents on Opus only.
+
+## 2026-10-20 (later) — PI correction: OT is an algorithm, the object is the trait flow
+Primary object: a trait vector field V on the activation manifold, dx/dt = P_T(x) ∇s(x).
+- s = log p+/p− is learned from UNPAIRED pos/neg samples (smooth classifier).
+- P_T = projection onto the local data tangent space.
+- Steering = integrating the flow. Curvature = turning of the integral curves. Boundary = where s saturates or the curve leaves the support. Composition = commutation of two fields.
+- Special cases: linear s → constant field (ITI/probe, flat). IDEEA nearest_pos_neg ≈ piecewise-constant hard-assignment estimate. OT = a different flow (min-kinetic-energy transport), kept only as a baseline column.
+The running geometry agent was redirected accordingly; it must update its prereg before the new analyses.
