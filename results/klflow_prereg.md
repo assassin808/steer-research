@@ -84,3 +84,8 @@ Per path:
 - Endpoint: strict blind full-answer labels; also hedge / "I have no comment" and gibberish rates vs α.
 - Constraints: ≤ 1 GPU job at a time, MIG slice, small batch, `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`.
 - A prereg addendum is written before launch.
+
+## Amendment A1 (before the main run; only a 5-step smoke test on L13H5 seen)
+The KDE bandwidth CV picked c = 0.5, the lower edge of the grid, on the smoke head. The grid is extended to
+c ∈ {0.25, 0.35, 0.5, 0.75, 1, 1.5, 2, 3}. If the CV still picks the edge, that edge is used and the report says so.
+(Cause: in 256-d, KDE likelihood CV favours small h, which makes the KDE score close to "snap to the nearest POS row".)
