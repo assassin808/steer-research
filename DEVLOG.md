@@ -100,3 +100,18 @@ Format: date · type [FOUND / IDEA / TRIED / DECIDED / ITERATION] · what · why
 - TRIED · Adversarial review (Opus) found that clean() truncated answers at the first blank line in the strict set (IDEEA 120/150, ITI 108 cut; ngref-fix 4) and that the seed-1 'matched' run was mislabelled; fixed by a blind full-answer relabel (2 passes + 60 controls, control TI agreement 0.97, no drift): IDEEA strict 0.223 -> 0.300, verdict unchanged. Report results/ngref_fix_fair.md/.json. GPU 8.0 h this task.
 - PREREGISTERED · 2026-10-20 · IDEEA<->ngref BRIDGE (one factor at a time; metric-on-mean-diff family A/B/G/I, unpaired kernel arm F, gradient arms C/D/H/K), dev rule as ngref_fix_prereg, matched dev KL 0.518, strict blind 21 runs x 150 q; results/bridge_prereg.md (before any run).
 - PREREGISTERED · 2026-10-20 · bridge amendment §9: arm O (directly optimised residual steering vector, KL leash beta in {1,10,100}, global/correct-only/gated K=2,4), before any run.
+
+## 2026-10-20 — Manifold / optimal-transport view of unpaired pos/neg samples (idea, not yet tested)
+Setup: many POS and NEG activations (unpaired, as in IDEEA). Locally Euclidean, globally curved.
+Formulation: steering = transport map T from the NEG distribution to the POS distribution; steer x by x + t·(T(x) − x).
+- Flat case: if POS and NEG are Gaussians with equal covariance, the OT map is a pure translation by μ+ − μ− (CAA/ITI).
+  So "steering space is flat" (paper W) ⇔ the displacement field T(x) − x is constant.
+- IDEEA = a quantised version: K atoms per side, nearest atoms define a piecewise-constant field.
+  But its matching maximises direction coherence (QAP over cosines), not transport cost — so it is a heuristic cousin of
+  semi-discrete OT, not a special case. Entropic OT (Sinkhorn, ε) on all samples is the cluster-free continuum version.
+- Curvature (W): variation of the displacement field across x (Jacobian / angle spread of local displacements),
+  and the gap between Euclidean and kNN-graph geodesic costs.
+- Boundary (C): t∈[0,1] is McCann interpolation inside the data support; t>1 extrapolates past the POS support boundary.
+  Predict: hedging/gibberish onset ≈ where distance-to-POS-kNN leaves the in-distribution range.
+- Composition (A): two trait fields compose iff their flows commute (Lie bracket ≈ 0).
+Rules: ~/steer_math/CLAUDE.md written today (pitfall list). Memory: research agents on Opus only.
