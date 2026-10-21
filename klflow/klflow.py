@@ -73,12 +73,28 @@ def fit_dsm(Y, sigma, steps=4000, seed=0):
 
 # ---------------------------------------------------------------- metrics
 class Metrics:
-    def __init__(s, Pho, Zfit_all, Zfit_pos, Zho_all, Zho_pos, S, HN, X0):
+    def __init__(s, Pho, Zfit_all, Zfit_pos, Zho_all, Zho_pos, S, HN, X0, ia=None, pa=None):
         s.P = Pho; s.S = S; s.HN = HN; s.X0 = X0
+        s.ia, s.pa = ia, pa  # bool masks: starts in half A, POS in half A
         pool = np.concatenate([X0, Pho]); D = np.sqrt(sqd(pool, pool)); s.med = np.median(D[np.triu_indices(len(pool), 1)])
         s.Dyy = np.sqrt(sqd(Pho, Pho))
         s.nn_all = NearestNeighbors(n_neighbors=10).fit(Zfit_all); s.b_all = np.quantile(s.nn_all.kneighbors(Zho_all)[0][:, -1], .95)
         s.nn_pos = NearestNeighbors(n_neighbors=10).fit(Zfit_pos); s.b_pos = np.quantile(s.nn_pos.kneighbors(Zho_pos)[0][:, -1], .95)
+
+    def mmd_cross(s, X):
+        if s.ia is None:
+            return s.mmd(X)
+        a = s._mmd(X[s.ia], s.P[~s.pa]); b = s._mmd(X[~s.ia], s.P[s.pa])
+        return [0.5 * (u + v) for u, v in zip(a, b)]
+
+    def _mmd(s, X, P):
+        Dxx = sqd(X, X); Dxy = sqd(X, P); Dyy = sqd(P, P)
+        n, m = len(X), len(P); out = []
+        for b in BW:
+            g = 1 / (2 * (b * s.med) ** 2)
+            kxx = np.exp(-g * Dxx); kyy = np.exp(-g * Dyy); kxy = np.exp(-g * Dxy)
+            out.append(float((kxx.sum() - n) / (n * (n - 1)) + (kyy.sum() - m) / (m * (m - 1)) - 2 * kxy.mean()))
+        return out
 
     def mmd(s, X):
         Dxx = sqd(X, X); Dxy = sqd(X, s.P); Dyy = s.Dyy ** 2
@@ -93,21 +109,25 @@ class Metrics:
         return float(2 * np.sqrt(sqd(X, s.P)).mean() - np.sqrt(sqd(X, X)).mean() - s.Dyy.mean())
 
     def __call__(s, X):
-        return dict(mmd=s.mmd(X), en=s.energy(X), s=float(np.median(s.S.s(X))),
+        return dict(mmd=s.mmd_cross(X), mmd_sameq=s.mmd(X), en=s.energy(X), s=float(np.median(s.S.s(X))),
                     in_all=float((s.nn_all.kneighbors(X)[0][:, -1] <= s.b_all).mean()),
                     in_pos=float((s.nn_pos.kneighbors(X)[0][:, -1] <= s.b_pos).mean()),
                     disp=float(np.median(np.linalg.norm(X - s.X0, axis=1)) / s.HN))
 
 
-def run_path(X0, vel, M, unit=False, HN=1.0):
+def run_path(X0, vel, M, unit=False, HN=1.0, dtcap=None, nstep=None):
     X = X0.copy(); v0 = vel(X)
     dt = STEP * HN if unit else STEP * HN / np.median(np.linalg.norm(v0, axis=1))
+    if dtcap is not None:
+        dt = min(dt, dtcap)
     rec = [M(X)]
-    for k in range(NSTEP):
-        v = vel(X)
+    for k in range(nstep or NSTEP):
+        v = np.nan_to_num(vel(X), nan=0.0, posinf=0.0, neginf=0.0)
         if unit:
             v = v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-12)
-        X = X + dt * v; rec.append(M(X))
+        stp = dt * v; nr = np.linalg.norm(stp, axis=1, keepdims=True)
+        stp = stp * np.minimum(1, 0.2 * HN / np.maximum(nr, 1e-12))
+        X = X + stp; rec.append(M(X))
     return rec
 
 
@@ -123,32 +143,37 @@ def summarise(rec):
     return out
 
 
-def paths_for(Zf, yf, gf, Xs, Pho, Zho_all, h, HN, dmu, which, C=None, dsm=None, keep_curves=True):
+def paths_for(Zf, yf, gf, Xs, Pho, Zho_all, hs, HN, dmu, which, C=None, dsms=None, keep_curves=True, ia=None, pa=None):
+    """hs = {'cv': h_cv, 'sm': h_smooth}; dsms = {'cv': score_fn, 'sm': score_fn}"""
     S = T.MLPScore(T.fit_mlp(Zf, yf, ALPHA))
     Yp = Zf[yf == 1]
-    M = Metrics(Pho, Zf, Yp, Zho_all, Pho, S, HN, Xs)
-    res = {}
-    sc0 = kde_score(Xs, Yp, h); gs0 = S.grad(Xs)
-    gam = {k: k * np.median(np.linalg.norm(gs0, axis=1)) / np.median(np.linalg.norm(sc0, axis=1)) for k in KS}
-    P = {}
-    if "dmu" in which: P["straight_dmu"] = (lambda X: np.tile(dmu, (len(X), 1)), True)
+    M = Metrics(Pho, Zf, Yp, Zho_all, Pho, S, HN, Xs, ia, pa)
+    res = {}; gs0 = S.grad(Xs); gnorm = np.median(np.linalg.norm(gs0, axis=1))
+    P = {}; info = {}
+    if "dmu" in which: P["straight_dmu"] = (lambda X: np.tile(dmu, (len(X), 1)), True, None)
     if "w" in which:
-        lr = T.fit_lr(Zf, yf, C); w = lr.coef_[0]; P["straight_w"] = (lambda X: np.tile(w, (len(X), 1)), True)
-    if "frozen" in which: P["frozen_grad_s"] = (S.grad, True)
-    for k in KS:
-        if f"guidK{k}" in which: P[f"guid_kde_k{k}"] = ((lambda g: lambda X: S.grad(X) + g * kde_score(X, Yp, h))(gam[k]), False)
-    if dsm is not None:
-        sc0d = dsm(Xs); gamd = {k: k * np.median(np.linalg.norm(gs0, axis=1)) / np.median(np.linalg.norm(sc0d, axis=1)) for k in KS}
+        lr = T.fit_lr(Zf, yf, C); w = lr.coef_[0]; P["straight_w"] = (lambda X: np.tile(w, (len(X), 1)), True, None)
+    if "frozen" in which: P["frozen_grad_s"] = (S.grad, True, None)
+    for hv, h in hs.items():
+        sc0 = kde_score(Xs, Yp, h); gam = {k: k * gnorm / np.median(np.linalg.norm(sc0, axis=1)) for k in KS}
+        info[f"gamma_{hv}"] = {str(k): float(v) for k, v in gam.items()}
         for k in KS:
-            P[f"guid_dsm_k{k}"] = ((lambda g: lambda X: S.grad(X) + g * dsm(X))(gamd[k]), False)
-    if "particle" in which: P["particle_kl"] = (lambda X: kde_score(X, Yp, h) - kde_score(X, X, h), False)
-    for nm, (vel, unit) in P.items():
-        rec = run_path(Xs, vel, M, unit=unit, HN=HN)
+            if f"guidK{k}" in which:
+                P[f"guid_kde_k{k}_{hv}"] = ((lambda g, hh: lambda X: S.grad(X) + g * kde_score(X, Yp, hh))(gam[k], h), False, 0.5 * h * h / gam[k])
+        if dsms is not None and hv in dsms:
+            dsm = dsms[hv]; sc0d = dsm(Xs); gamd = {k: k * gnorm / np.median(np.linalg.norm(sc0d, axis=1)) for k in KS}
+            for k in KS:
+                P[f"guid_dsm_k{k}_{hv}"] = ((lambda g, f: lambda X: S.grad(X) + g * f(X))(gamd[k], dsm), False, 0.5 * h * h / gamd[k])
+        if "particle" in which:
+            P[f"particle_kl_{hv}"] = ((lambda hh: lambda X: kde_score(X, Yp, hh) - kde_score(X, X, hh))(h), False, 0.5 * h * h)
+    for nm, (vel, unit, cap) in P.items():
+        rec = run_path(Xs, vel, M, unit=unit, HN=HN, dtcap=cap, nstep=None if unit else 2 * NSTEP)
         res[nm] = dict(summary=summarise(rec))
         if keep_curves:
             res[nm]["curve"] = {k: [r[k] for r in rec] for k in ["en", "s", "in_all", "in_pos", "disp"]}
-            res[nm]["curve"]["mmd"] = [r["mmd"] for r in rec]
-    return res, dict(gamma={str(k): float(v) for k, v in gam.items()}, med_bw=float(M.med))
+            res[nm]["curve"]["mmd"] = [r["mmd"] for r in rec]; res[nm]["curve"]["mmd_sameq"] = [r["mmd_sameq"] for r in rec]
+    info["med_bw"] = float(M.med)
+    return res, info
 
 
 def main():
@@ -162,15 +187,22 @@ def main():
     Zf, yf, gf = Z[tr], y[tr], q[tr]; Zh, yh = Z[~tr], y[~tr]; Xs, Pho = Zh[yh == 0], Zh[yh == 1]
     dmu = Zf[yf == 1].mean(0) - Zf[yf == 0].mean(0); HN = float(np.linalg.norm(dmu))
     C, _ = T.cv_select(Zf, yf, gf, T.C_GRID, T.fit_lr)
-    h, base, hsc = kde_cv_h(Zf[yf == 1], gf[yf == 1])
-    dsm, dsm_loss = fit_dsm(Zf[yf == 1], h)
-    out = dict(layer=l, head=hh, space=a.space, dmu_norm=HN, h=float(h), h_base=float(base), h_cv=hsc, dsm_loss=dsm_loss, C=C)
-    # floor
-    Mf = Metrics(Pho, Zf, Zf[yf == 1], Zh, Pho, T.MLPScore(T.fit_mlp(Zf, yf, ALPHA)), HN, Xs)
-    fl = [Mf.mmd(Zf[yf == 1][rng.choice((yf == 1).sum(), len(Xs), replace=False)]) for _ in range(5)]
+    h, base, hsc = kde_cv_h(Zf[yf == 1], gf[yf == 1]); hs = {"cv": h, "sm": 1.0 * base}
+    dsms, dl = {}, {}
+    for hv, hh_ in hs.items():
+        dsms[hv], dl[hv] = fit_dsm(Zf[yf == 1], hh_)
+    # A/B split of held-out questions
+    qh = q[~tr]; uq = np.unique(qh); qa = set(np.random.default_rng(0).permutation(uq)[: len(uq) // 2])
+    ia = np.array([u in qa for u in qh[yh == 0]]); pa = np.array([u in qa for u in qh[yh == 1]])
+    out = dict(layer=l, head=hh, space=a.space, dmu_norm=HN, h=float(h), h_smooth=float(base), h_base=float(base), h_cv=hsc, dsm_loss=dl, C=C)
+    Mf = Metrics(Pho, Zf, Zf[yf == 1], Zh, Pho, T.MLPScore(T.fit_mlp(Zf, yf, ALPHA)), HN, Xs, ia, pa)
+    fl = []
+    for _ in range(5):
+        F = Zf[yf == 1][rng.choice((yf == 1).sum(), len(Xs), replace=False)]
+        fl.append(Mf.mmd_cross(F))
     out["floor_mmd"] = np.mean(fl, 0).tolist()
     which = ["dmu", "w", "frozen", "guidK0.25", "guidK1.0", "guidK4.0", "particle"]
-    res, info = paths_for(Zf, yf, gf, Xs, Pho, Zh, h, HN, dmu, which, C=C, dsm=dsm)
+    res, info = paths_for(Zf, yf, gf, Xs, Pho, Zh, hs, HN, dmu, which, C=C, dsms=dsms, ia=ia, pa=pa)
     out["paths"] = res; out.update(info)
     s1 = {k: (round(v["summary"]["1.0"]["min"], 5), round(v["summary"]["1.0"]["dstar"], 2), round(v["summary"]["1.0"]["rise"], 2)) for k, v in res.items()}
     print(f"L{l}H{hh} {a.space} h={h:.2f} (c={h/base:.2f}) floor {out['floor_mmd'][1]:.5f} start {res['straight_dmu']['summary']['1.0']['start']:.5f} | (min,d*,rise) {s1} {time.time()-t0:.0f}s", flush=True)
@@ -185,9 +217,9 @@ def main():
                 Zf_ = np.concatenate([an, bp]); yf_ = np.r_[np.zeros(len(an), int), np.ones(len(bp), int)]
                 gf_ = np.r_[gf[yf == 0], gf[yf == 1]]
                 dmu_ = bp.mean(0) - an.mean(0)
-                rr, _ = paths_for(Zf_, yf_, gf_, hn, hp, np.concatenate([hn, hp]), h, HN, dmu_, ["dmu", "frozen", "guidK1.0", "particle"], keep_curves=False)
+                rr, _ = paths_for(Zf_, yf_, gf_, hn, hp, np.concatenate([hn, hp]), hs, HN, dmu_, ["dmu", "frozen", "guidK1.0", "particle"], keep_curves=False, ia=ia, pa=pa)
                 nulls[kind].append({k: v["summary"] for k, v in rr.items()})
-            print(f"  null {kind}: gap(dmu - min(guid,part)) {[round(x['straight_dmu']['1.0']['min'] - min(x['guid_kde_k1.0']['1.0']['min'], x['particle_kl']['1.0']['min']), 5) for x in nulls[kind][:5]]} {time.time()-t0:.0f}s", flush=True)
+            print(f"  null {kind}: gap_sm(dmu - min(guid,part)) {[round(x['straight_dmu']['1.0']['min'] - min(x['guid_kde_k1.0_sm']['1.0']['min'], x['particle_kl_sm']['1.0']['min']), 5) for x in nulls[kind][:5]]} {time.time()-t0:.0f}s", flush=True)
             out["nulls"] = nulls
             json.dump(out, open(f"{a.out}/L{l}H{hh}_{a.space}.json", "w"))
 

@@ -89,3 +89,27 @@ Per path:
 The KDE bandwidth CV picked c = 0.5, the lower edge of the grid, on the smoke head. The grid is extended to
 c ∈ {0.25, 0.35, 0.5, 0.75, 1, 1.5, 2, 3}. If the CV still picks the edge, that edge is used and the report says so.
 (Cause: in 256-d, KDE likelihood CV favours small h, which makes the KDE score close to "snap to the nearest POS row".)
+
+## Amendment A2 (POST HOC — after seeing the first P2 outputs; it fixes measurement defects and is not a re-test)
+Defects found:
+1. **Integration instability.** KDE-CV picked the new lower edge c = 0.25 on every head, so the KDE score is a stiff
+   nearest-neighbour snap (gain ∝ γ/h²). Explicit Euler with dt set from the initial speed diverged for guidance
+   k = 4 and the particle flow (MMD rise up to 1e10).
+2. **Same-question evaluation bias.** Held-out NEG and held-out POS come from the same 79 questions. A rigid
+   translation keeps the question match and reaches an MMD² below the "floor" (fit POS vs held-out POS), while any
+   flow aimed at fit POS (other questions) cannot. The prereg metric therefore favours straight Δμ by construction.
+
+Fixes (fixed now, before the rerun):
+- **Evaluation.** Held-out questions are split into halves A/B (seed 0). The primary metric is
+  ½[MMD²(X_t[NEG_A], POS_B) + MMD²(X_t[NEG_B], POS_A)], i.e. moved NEG vs POS rows of *different* questions.
+  The floor uses the same construction with fit-POS subsamples. The old same-question MMD is kept as a secondary metric.
+- **Stability.**
+  - Guidance KDE: dt ≤ 0.5·h²/γ. Particle: dt ≤ 0.5·h². DSM: the same caps with σ.
+  - Every path additionally clips each particle's step to ≤ 0.2|Δμ|.
+  - Steps are raised to 300 for the score-based paths only.
+- **Bandwidth.** Every score-based path is run at h_cv (the CV choice, usually the edge) and at h_smooth = 1.0 × the
+  median 1-NN distance, with DSM σ = h of the same variant. Nulls (20 + 20 reps) cover: straight Δμ, frozen ∇s,
+  guidance-KDE k = 1 (both h), particle (both h).
+- **Decision rules.** P2a and P2b are unchanged but evaluated on the new primary metric. The P2b data-side minimum is
+  also reported restricted to the null-matched methods. Both h variants are reported, and P2b counts as supported only
+  if it holds at h_smooth AND at h_cv.
