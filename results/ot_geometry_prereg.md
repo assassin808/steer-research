@@ -99,3 +99,54 @@ A kNN-smoothed field does have power:
 3. Added sensitivity space **pw8** (PCA-whitened 8 dims), where OT is well estimated.
 4. The "flat" verdict on real data is only interpretable together with the power check above; the report
    must state the minimum detectable curvature at the real n and dim (re-run the synthetic at matched n).
+
+## Amendment A2 — REFRAME (2026-10-20, PI via coordinator): the trait flow is the primary object; OT is a baseline column
+Written before any trait-flow code was run. OT analyses (a)–(e) above continue unchanged as a comparison column
+(array job 6593005 was already queued; none of its outputs had been read when this was written).
+
+### Objects
+- **Trait score** s(x) ≈ log p+(x)/p−(x) (up to a constant), fitted per head on UNPAIRED fit-set rows, z space:
+  (i) **LR**: L2 logistic regression, C by grouped (by question) 3-fold CV over {0.001, 0.01, 0.1, 1};
+  (ii) **MLP**: one hidden layer, 64 tanh units (smooth), L2 weight decay α by grouped 3-fold CV over {0.01, 0.1, 1, 10},
+  lbfgs, max_iter 500, seed 0. ∇s computed analytically.
+- **Trait flow** dx/dℓ = V(x), V = P_T(x)∇s / ||P_T(x)∇s|| (unit speed, ℓ = arc length);
+  P_T(x) = projection on the top-r local PCs of the k = 64 nearest fit points (POS∪NEG) of x, r = smallest number of
+  PCs explaining ≥ 90% of local variance. Also the **unprojected** flow V₀ = ∇s/||∇s||.
+- Euler integration, step h = 0.02·||Δμ||, up to arc length 3·||Δμ|| (150 steps), from every held-out NEG point.
+  (Δμ = fit POS mean − fit NEG mean, z space.)
+
+### Limits stated in advance (checked in code)
+- Linear s (LR) ⇒ V₀ constant (= probe weight w); this is the ITI/probe-like flat field. P_T(x)w is not constant, so the
+  projected linear flow turns only through the tangent estimate.
+- IDEEA nearest_pos_neg = hard-assignment, piecewise-constant estimate of a local displacement (not a gradient).
+- OT displacement = minimum-kinetic-energy transport of the whole distribution; not the gradient flow of s in general.
+- NOTE (stated now): a pure translation of a NON-Gaussian shape does NOT give a linear log-ratio, so the trait flow of
+  a translated mixture is curved. Hence "OT-flat" ≠ "trait-flow-flat"; the equal-covariance Gaussian is the null in
+  which both are flat.
+
+### Analyses and decision rules
+1. **Nonlinearity of s** (gate): MLP vs LR held-out log-loss and AUC on held-out questions, bootstrap over questions
+   (1000). "Nonlinear s supported" if the MLP log-loss improvement has a 95% CI excluding 0. If not supported,
+   the field is reported as flat-by-Occam regardless of 2.
+2. **Flatness of flow lines** (MLP s; projected and unprojected): turning angle θ(ℓ) = ∠(V(x₀), V(x_ℓ)) at
+   ℓ ∈ {0.5, 1, 2}·||Δμ||, and mean curvature κ̄ = mean_steps ||V_{k+1} − V_k|| / h. Per head statistic = median over
+   held-out NEG starts. Nulls (same n's, same pipeline incl. the α selected on the data): **G-shared** (10 reps; the
+   field must be constant), **Perm** (5 reps; no trait), **R-shift** (5 reps; data-shape translation — reported, not
+   used for the verdict). Head is *curved* if θ(||Δμ||) > G-shared 97.5% quantile, *flat* if ≤ it.
+   **Overall "curved"** if ≥ 50% of top-24 heads are curved (unprojected flow = primary, since the projected flow's
+   turning includes tangent-estimation noise); **"flat"** if ≥ 70% are flat; else "mixed".
+   Prediction: curved overall (the paired per-question δ_q check run earlier, post hoc, already showed a mostly
+   non-constant per-question displacement), but with turning far below the Perm null.
+3. **Estimator agreement** at held-out NEG points: cos(V(x), ·) for IDEEA npn nc=2, mean diff, OT displacement
+   (full-dev entropic OT, c = 0.01, z space), LR weight w; both V and V₀. Also cos(V(x), mean_x V) (self-consistency).
+   Prediction: cos(V₀, w) highest; IDEEA ≈ mean diff; OT lowest.
+4. **Boundary along flow lines** (unprojected and projected MLP flow, and the straight line x + ℓ·Δμ/||Δμ||): first
+   arc length at which (a) s saturates: ds/dℓ < 10% of its initial value; (b) the field vanishes: ||P_T∇s|| < 10% of
+   initial; (c) the point leaves the POS support band (10-NN distance to fit POS > q95 of held-out POS), counted
+   only after the path has been inside once. Report median arc lengths in units of ||Δμ||.
+   **Prediction: the straight line leaves the support sooner** (smaller median ℓ_exit) than the projected flow, on
+   ≥ 70% of top heads; for the unprojected flow no prediction (MLP extrapolation off-support is possible).
+   Also report s at exit and the fraction never entering the band.
+5. **Composition**: SKIPPED — no second label set is cached for Gemma (only TruthfulQA); a new trait would need a GPU
+   extraction and a bridge experiment holds the GPUs. Noted as not done.
+Heads: same top-24 + random-8. Space: z (primary), pw32 (sensitivity).
