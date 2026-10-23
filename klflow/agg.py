@@ -19,8 +19,11 @@ for hv, shade in [("cv", 0), ("sm", 1)]:
 plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 150})
 rows = {}
 for f in glob.glob(f"{OUT}/p2/*.json"):
-    r = json.load(open(f)); rows[(r["layer"], r["head"], r["space"])] = r
-GUID = [k for k in LAB if k.startswith("guid") or k == "particle_kl"]
+    r = json.load(open(f))
+    if "h_smooth" not in r:
+        continue
+    rows[(r["layer"], r["head"], r["space"])] = r
+GUID = [k for k in LAB if k.startswith(("guid", "particle"))]
 S = {}
 for space in ["z", "pw32"]:
     for grp, heads in [("top24", TOP), ("random8", RND)]:
