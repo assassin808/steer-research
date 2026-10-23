@@ -39,6 +39,9 @@ out = {"official": {k: row(runs[k]) for k in order if k in runs}}
 sel = {f: (v["selected"] or {}).get("config") for f, v in SEL["families"].items()}
 nonplain = {f: (v["best_nonplain"] or {}).get("config") for f, v in SEL["families"].items()}
 msel = {f: (nonplain[f] if (sel[f] or "").endswith("_inf") or sel[f] == "F_inf_inf" else sel[f]) for f in sel}
+for f_ in ("G", "H", "I"):  # declared deviation: no finite-lam config passes the refusal cap -> max-dev-TI finite lam (KL<=1.2)
+    if not msel.get(f_) or msel[f_] == f_ + "_inf" or msel[f_] is None:
+        msel[f_] = f_ + "_10"
 out["sel"], out["nonplain"], out["metric_sel"] = sel, nonplain, msel
 S = lambda f: msel.get(f)
 STEPS = [("S1 data", "L0", "A_inf"), ("S2 clustering", "A_inf", "B_inf"), ("S3 context", "B_inf", "E_inf"), ("S4 md->grad (ctx)", "E_inf", "C_inf"),
