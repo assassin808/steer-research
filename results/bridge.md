@@ -34,3 +34,32 @@ IDEEA nearest_pos_neg nc4 (40/40); lam_rel = 1e12 == plain for A, B, I (40/40 id
 between near-identical configs is therefore noisy at the item level; only differences well above this floor are interpretable.
 Kernel arm F effective neighbours (test prompts, per head and class, bank 1085/1288): Euclidean tau_rel 0.05 -> 36, 0.2 -> 433;
 Mahalanobis 0.05 -> 22, 0.2 -> 295.
+
+## 2. Dev grid (official judges, 395 dev q; in-sample for the directions as in the earlier dev protocol; base dev TI 0.195, refusal 0.722)
+208 dev configs (A–J 160 new, K 20 existing, O 48 incl. 12 trainings). Selection rule (KL <= 1.2, refusal <= 0.722, max dev TI):
+| family | selected | dev TI / KL / refusal | best finite-lam (metric) member | dev TI / refusal |
+|---|---|---|---|---|
+| A IDEEA clustered (train refit) | A_inf (plain) | .554 / .60 / .24 | A_10 | .377 / .55 |
+| B ITI-like per-head | B_inf | .476 / .64 / .50 | B_10 | .327 / .69 |
+| C head grad per-head | C_inf | .957 / .57 / .00 | C_10 | .937 / .00 |
+| D clustered head grad | D_inf | .939 / .58 / .00 | D_10 | .899 / .00 |
+| E eval-ctx md (head) | E_inf | .458 / .56 / .51 | – | |
+| F kernel (unpaired) | F_inf_inf (= mass-mean) | .458 / .65 / .51 | best local: F_euc0.05_inf (no metric) | .387 / .61 |
+| G md global, full G_H | G_inf | .484 / .59 / .59 | none passes refusal cap; best: G_10 | .294 / .84 |
+| H grad global, full G_H | H_inf | .881 / .55 / .00 | none passes; best H_10 | .233 / .83 |
+| I L13 md (CAA-like) | none passes refusal cap | I_inf .438 / .59 / .86 | I_10 | .177 / .69 |
+| J L13 eval-ctx md | none passes | J_inf .415 / 1.40 / .07 | | |
+| K L13 grad (eucref/ngref-fix, existing) | K_inf (eucref) | .911 / .77 / .01 | K_10 (ngref-fix) | .395 / .61 |
+| O1 optimised, contrastive, global | beta 100 | .203 / .57 / .70 | | |
+| O2 optimised, correct-only | beta 1 | .532 / .58 / .08 | | |
+| O3 optimised, K=2 gate | beta 10 | .273 / .18 / .67 | | |
+| O4 optimised, K=4 gate | beta 1 | .377 / .67 / .59 | | |
+**Dev pattern (official judges):** at every site and for both direction sources, the dev-selected config is the plain (lam = inf)
+member; every finite lam lowers dev TI, mostly by RAISING the refusal ("I have no comment") rate (e.g. G 0.59 -> 0.84-0.96,
+H 0.00 -> 0.83-0.97, B 0.50 -> 0.69-0.85, K 0.01 -> 0.61-0.88). The contrastive optimised arm with a KL leash (O1, O3, O4) hedges
+the same way (refusal 0.6-0.98), while the correct-only optimised arm (O2, beta 1) does not (refusal 0.08).
+Label-free check of the obvious mechanism: the first-order change of log p("I have no comment.") per unit Fisher norm is NOT larger
+for the metric directions (ngref lam_rel 0.1: -0.34 train / -0.28 val, i.e. it lowers abstention to first order) — the hedging is a
+finite-step effect, consistent with the earlier ngref-fix diagnosis. Test-set runs (matched dev KL 0.518) submitted: jobs 6854055/6854056.
+Deviation (declared): for G/H/I no finite-lam config passes the refusal cap, so their "metric" member is the max-dev-TI finite-lam
+config with KL <= 1.2 (refusal cap relaxed); O1_b10's matched strength is extrapolated beyond its dev sweep (dev KL saturates at 0.20).
