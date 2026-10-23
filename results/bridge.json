@@ -2796,5 +2796,31 @@
    }
   }
  },
- "gpu_hours": 18.1
+ "gpu_hours": 18.1,
+ "review": {
+  "reviewer": "Opus adversarial",
+  "verdict": "main claim stands with narrowing: metric is the largest break (also S2 clustering-off and S7b md site are breaks); lam_rel<=10 only; first-order mechanism = G top eigvec is abstain-vs-answer axis; arm O exploratory"
+ },
+ "mechanism_first_order": {
+  "cos_refusal_axis_top_eig": {
+   "head": 0.962,
+   "L13": 0.976
+  },
+  "abstain_logodds_per_fisher_norm": {
+   "H_inf": -1.345,
+   "H_10": -0.284,
+   "C_inf": -1.249,
+   "C_10": -0.714,
+   "G_inf": -0.526,
+   "G_10": 0.08,
+   "B_inf": -0.595,
+   "B_10": -0.095,
+   "K_inf": -1.503,
+   "K_10": -0.392,
+   "K_1": -0.146,
+   "K_0.1": 0.009,
+   "I_inf": -0.111,
+   "I_10": -0.027
+  }
+ }
 }
