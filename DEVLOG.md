@@ -178,3 +178,24 @@ The running geometry agent was redirected accordingly; it must update its prereg
   the grid on the logit scale; re-test W3 with shrinkage or norm-matched cluster directions before any IDEEA-depth claim.
 - FOUND · 2026-10-21 · bridge label-free (fit 316 train q): at the SAME site, mass-mean (IDEEA/ITI/CAA source) and grad r_fix are nearly orthogonal (cos 0.04 head site, 0.07 L13); metric rotates the gradient (cos 0.47/0.61 at lam_rel 1) but barely the mass-mean (0.77-0.98); first-order val gain of r per Fisher norm: mass-mean 0.5-0.8 vs grad 1.5-1.8 vs natural grad 3.5-4.1. All limit checks pass (file IDEEA==class, hard kernel==nearest_pos_neg, lam 1e12==plain, 40/40). bf16 noise floor: lam 1e6 (1e-5 rel. change) flips 4-13/40 greedy answers.
 - FOUND · 2026-10-23 · bridge DEV (208 configs, official judges): plain (lam=inf) member selected in every family; every finite lam lowers dev TI mainly by raising refusal (G .59->.84-.96, H .00->.83-.97, K .01->.61-.88); optimised KL-leashed contrastive arm O1/O3/O4 also hedges (refusal .6-.98), correct-only O2 beta1 does not (.08). First-order dlogp(abstention) does not explain it. Test jobs 6854055/6854056.
+
+## 2026-10-23 — KL gradient flow vs frozen velocity (results/klflow.md; CPU only; written in ~/scratch/steer_live due to /home outage)
+- PREREGISTERED · results/klflow_prereg.md (P2 frozen vs guidance/particle KL flow; P3 conditional OT; P1 GPU gated on P2). A1: KDE bandwidth grid extended (smoke). A2 (POST HOC): the first P2 run was discarded (stiff KDE → Euler divergence; same-question MMD target favoured rigid shift) → cross-question A/B MMD, dt caps + clipping, h_smooth variant.
+- FOUND · Frozen paths (Δμ, w, ∇s) overshoot on 24/24 heads: MMD minimum near 0.5–0.85|Δμ|, leave the support after ~6|Δμ|, s saturates near 9.7.
+- FOUND · P2a/P2b preregistered verdict FAIL (guidance never plateaus; guidance/particle beat Δμ on only 21% of heads, ≤12% beyond the nulls). BUT the Opus review showed the test was uninformative:
+  - h_smooth is effectively a global mean pull, so the particle flow ≈ mean translation;
+  - h_cv is a NN snap whose self-weight kills repulsion;
+  - DSM is worse than an isotropic Gaussian score;
+  - the floor is unreachable (POS_A vs POS_B is already 1.5–2.4×);
+  - the nulls carry no question structure.
+  → P2 = INCONCLUSIVE. The "not a translation" claim was withdrawn.
+- FOUND · P3 FAIL (robust): conditional within-question OT aligns with ∇s≈w worse than unconditional (.095 vs .129, 24/24 heads), though above the shuffle null (.067); split-half ceiling .32.
+- DECIDED · P1 (GPU guidance steering) NOT run: the gate failed, and there is no CPU evidence that guidance helps.
+- NEXT · P2 v2 spec in klflow.md:
+  - effective-neighbour-controlled bandwidth;
+  - LOO/SVGD repulsion;
+  - noisy Langevin;
+  - question-matched floor, many A/B splits;
+  - question-preserving nulls.
+  To be preregistered first. Only then reconsider P1.
+- LESSON · In 256-d, KDE scores are degenerate at both ends; always report the effective neighbour count. Use a cluster-matched floor when the targets come from few questions.

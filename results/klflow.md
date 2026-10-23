@@ -1,6 +1,6 @@
 # KL gradient flow vs frozen velocity (P2), conditional OT (P3), guidance steering (P1, gated)
 
-Status: **v1, before adversarial review.**
+Status: **v2, after adversarial Opus review.** The review found that the P2 test of the full/guidance flow is **uninformative** (implementation degenerate). v1 had read it as a falsification; that reading is withdrawn.
 
 - Prereg: `results/klflow_prereg.md`. It has two amendments:
   - A1: KDE bandwidth grid extended downward, after a 5-step smoke test.
@@ -13,23 +13,44 @@ Status: **v1, before adversarial review.**
   - heads: IDEEA top-24 + 8 random;
   - z space is primary, pw32 is a sensitivity check.
 
-## Headline
-1. **P2a fails.** The frozen-velocity paths (straight Δμ, straight probe w, frozen ∇s) do pass through an MMD minimum
-   and then diverge (24/24 heads), as predicted. But the guidance flow ∇s + γ∇log p+ does not plateau: 0/24 heads.
-   The particle KL flow plateaus on 0/24 heads at h_smooth and 4/24 at h_cv.
-2. **P2b fails.** In z, the best guidance or particle path reaches a lower minimum MMD than straight Δμ on only 21% of
-   heads at the primary bandwidth. Its gap beats the null 97.5% quantile on only 0–12% of heads (both nulls and both bandwidth variants).
-   At bandwidths ×0.5 and ×2 it is 12% and 58%; the threshold was 70%.
-3. **P1 gate: not passed.** The GPU arm was not run.
-4. **P3 fails.** Within-question (conditional) OT aligns with ∇s *worse* than unconditional OT on 24/24 heads
-   (.095 vs .129). It is still above a shuffle null (.067).
-5. **What does hold.**
-   - Guidance and particle paths stay inside the data support (100% of points), while straight and frozen paths leave it
-     after about 6|Δμ|.
-   - The particle flow does not overshoot the trait score: final s ≈ 1.3 vs 9.7 for frozen paths.
-   - But guidance stays in support by *drifting toward high-density POS regions*, not by matching the POS
-     distribution: its MMD rises again.
-   - Straight Δμ remains the best simple transport in z.
+## Headline (v2)
+1. **Survives: frozen velocities overshoot.** Straight Δμ, the straight probe direction w, and the frozen ∇s path all
+   pass through an MMD minimum and then diverge (24/24 heads, z). They leave the data support after about 6|Δμ|, and
+   the trait score saturates far above the POS level (s ≈ 9.7).
+2. **P2a/P2b: INCONCLUSIVE, not falsified.** The preregistered "fail" verdicts stand as numbers. But the review showed
+   that neither guidance nor particle estimator implements a working KL flow in 256-d:
+   - At h_smooth, the KDE uses 620–950 of about 1,100 fit-POS rows per point, so ∇log p̂+ ≈ (μ+ − x)/h².
+     Guidance then just contracts toward μ+, and the particle flow reduces to a mean-matching translation.
+     That is why it tracks straight Δμ.
+   - At h_cv, the KDE uses 2–12 effective neighbours. The self-weight in the particle cloud's KDE is 0.95–0.997, so
+     the repulsion term ≈ 0 and the "particle flow" is pure nearest-neighbour attraction.
+   - The DSM score is worse than an isotropic-Gaussian score (denoising loss 9.8 vs 3.0 at σ_smooth), because the
+     noise shell is about 10× the data radius.
+   - The guidance-plateau prediction was ill-posed before any data: noiseless ascent on ∇s + γ∇log p+ goes to modes,
+     never to the distribution p+. That is a prereg error, not a finding.
+3. **P1 gate: not passed → GPU arm not run.** This is correct by the letter of the prereg, and also on substance: there
+   is no CPU evidence that guidance helps. The reason, however, is that the test was uninformative, not that the
+   theory was refuted.
+4. **P3 fails (survives review).** Within-question OT is no more aligned with ∇s ≈ w than unconditional OT:
+   .095 vs .129 on 24/24 heads. It also loses at the level of question means (.12–.14 vs .17–.18, reviewer check).
+   It is still above a shuffle null (.067).
+5. **Withdrawn from v1.**
+   - "NEG→POS is not a translation (stalls at 2.4× floor)". The floor was wrong: true held-out POS of half A vs half B
+     is already 1.5–2.4× that floor (question clustering of ~40-question halves). Against POS_A↔POS_B, Δμ's leftover
+     gap is about 0–0.6 floor units.
+   - "The KL flow does not close it in 256-d". Not tested.
+   - "Guidance stays in support / is mode-seeking" as a finding. It is trivial for a contraction toward μ+.
+   - "Particle s ≈ 1.3, no overshoot" as KL-flow evidence. It is a mean-matcher.
+
+**NEXT (spec for a P2 v2, CPU, to be preregistered before running).**
+- Bandwidth chosen so the effective KDE neighbour count is 10–50; report the count per path.
+- Leave-one-out repulsion or SVGD for the particle flow.
+- Drop DSM, or validate it against isotropic-Gaussian and KDE baselines with annealed σ ≪ radius/√d.
+- Floor = POS_A↔POS_B or a fit-POS sample matched on question count; ≥ 10 random A/B splits.
+- Question-preserving nulls (within-question residual shuffle), with h recomputed per null.
+- Rise reported as a continuous value plus a "no progress" class.
+- A noisy Langevin variant instead of noiseless guidance.
+- Apply the original gate to those results before any GPU work.
 
 ## P2 — moving the held-out NEG cloud toward POS
 **Metric (A2).** MMD² between moved NEG rows of question-half A and POS rows of the other half B, averaged over both
@@ -82,7 +103,7 @@ The median data gap is −0.0010 at ×1, which favours Δμ. The null-gap median
 
 **Random-8 heads (z).** Same pattern, weaker signal: straight Δμ min/start .89, particle .93.
 
-**Interpretation.**
+**Interpretation (v1 text, superseded by the Headline v2 caveats).**
 - The frozen velocity overshoots, which is the mechanism the PI predicted. Straight paths cross the support boundary at
   about 6|Δμ|, and their trait score saturates far above the POS level.
 - But neither practical "full-flow" estimator fixes this in 256-d.
@@ -127,6 +148,20 @@ Other notes:
   nearest-neighbour KDE.
 - DSM σ follows h.
 - One pw32 random-head output is missing (63/64 rows).
+
+## Adversarial review (Opus) — objections and handling
+| # | objection | severity | handling |
+|---|---|---|---|
+| 1 | Both KDE bandwidths degenerate (global mean pull / NN snap; self-weight kills repulsion) | fatal for the P2 guidance/particle claims | P2 relabelled inconclusive; v2 spec |
+| 2 | Floor unreachable for ~40-question clouds; POS_A vs POS_B is already 1.5–2.4× | fatal for "not a translation" | claim withdrawn |
+| 3 | Nulls lose question structure; h not recomputed per null | major | stated; question-preserving nulls in the v2 spec |
+| 4 | DSM worse than an isotropic Gaussian score | major | DSM results flagged invalid |
+| 5 | Noiseless guidance can never plateau at the distribution | major | stated as a prereg error |
+| 6 | Rise metric degenerate when the min is at step 0 | major | stated; continuous rise + "no progress" class in v2 |
+| 7 | Convergence fine; dt caps and clipping do not bind | minor | noted |
+| 9 | P3 holds; say "vs w" | minor | headline says ∇s ≈ w |
+| 10 | Forking paths in A2 (each change helped the score paths, which still failed) | major | noted; low false-negative risk, but the fixes were degenerate |
+| 11 | Gate decision | minor | correct; P1 not run |
 
 ## Not done
 - P1 GPU guidance steering (gate failed).
