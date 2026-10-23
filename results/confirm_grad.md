@@ -5,7 +5,7 @@ Numbers: `results/confirm_grad.json` (full report), `results/confirm_grad_strip.
 Code: `ideea_harness_gemma/scripts/confirm_grad.py` (directions, calibration, specs), `confirm_blind_build.py`, `confirm_report.py`,
 `confirm_strip_build.py` (post hoc), `confirm_mc.py`, `cg_{dev,test,mc}.sbatch`. Raw outputs: `~/scratch/ideea_gemma/{results_gm/{development,test}_confirm,
 blind_confirm, blind_confirm_keys, runs_ng/confirm, runs_ng_confirm}` (not in git).
-Status: DRAFT, before the adversarial review.
+Status: post-review version (adversarial Opus review, Section 'Review'). Post-hoc follow-ups: `results/confirm_grad_posthoc.json`, code `confirm_posthoc.py`, reviewer scripts `scripts/confirm_review/`.
 
 ## Verdict against the pre-registration: **PASS (K1–K4 all met)**
 Primary contrast: C̄ (mean over 3 bootstrap seeds of the train references, each at its own dev-matched strength) minus IDEEA paper config,
@@ -22,10 +22,22 @@ labelled before: +0.159 [+0.097, +0.222] (a) / +0.159 [+0.094, +0.224] (b); with
 C at dev KL 0.30 vs IDEEA at 0.518 (C given ~40% less KL): +0.109 [+0.061, +0.159] (b); the bridge's original direction (C_orig): +0.147 (a) / +0.180 (b);
 official judges: +0.339 [+0.292, +0.386].
 
-**But the size is smaller than the bridge claimed and the gain is informativeness, not truthfulness.** Bridge (150 q, Sonnet): C .460 vs IDEEA .310 (Δ +.15);
-here C̄ .473 (a) / .470 (b) vs IDEEA .332 / .316. Decomposition (C̄ − IDEEA): truthful **−0.049 [−0.089, −0.007]** (a) / −0.048 [−0.089, −0.008] (b);
-informative **+0.108 [+0.057, +0.160]** (a) / +0.132 [+0.080, +0.185] (b). The steered model abstains less ("contains 'no comment'": IDEEA 79%, C 3–8%) and
-answers; it is slightly *less* truthful than IDEEA.
+**What the PASS means (rescoped after review).** The bridge's number replicates (C̄ .473 (a) / .470 (b) vs IDEEA .332 / .316 on 395 q; bridge
+150 q: .460 vs .310). But the gain is informativeness, not truthfulness, and it is concentrated on one kind of question:
+- Decomposition (C̄ − IDEEA): truthful **−0.049 [−0.089, −0.007]** (a) / −0.048 [−0.089, −0.008] (b); informative **+0.108 [+0.057, +0.160]** (a) /
+  +0.132 [+0.080, +0.185] (b).
+- C does not produce more confident misinformation: P(truthful | informative) is .85–.92 for C vs .78 for IDEEA; informative-and-false .04–.09 vs .09.
+  C's truth deficit comes from false *uninformative* answers (12–17% vs 6%): over-applied "there is no scientific consensus…" framings and garble
+  (only a minority are regex double negations).
+- **Mechanism: C replaces IDEEA's abstention mode with a debunk template.** 54–63% of C answers open with "There is no / There isn't / It's impossible to /
+  This is a trick…" (IDEEA 1%, base 0%); answers containing "no comment" fall from 79% (IDEEA) to 3–8%.
+- **Post hoc (reviewer's split, not pre-registered):** on the 140 questions whose TruthfulQA Best Answer is itself a negation/debunk, C̄ − IDEEA =
+  **+0.33 [+0.26, +0.41]** (b) / +0.32 (a); on the 255 specific-fact questions only **+0.055 [−0.007, +0.115]** (b) / +0.043 [−0.014, +0.099] (a),
+  i.e. not resolved. Adversarial vs non-adversarial questions: +0.18 vs +0.12 (both CIs exclude 0). C also misapplies the template to factual questions
+  ("This is a subjective statement" for Auckland; "There is no definitive list of Nobel laureates").
+- C is trained on the likelihood of TruthfulQA reference answers, whose typical correct-answer style is exactly this debunk template. By the logic of
+  rule 6, part of the strict-TI gain on this benchmark may be learning the benchmark's answer style rather than becoming more truthful in general.
+  A template control and an out-of-benchmark factual check were not run (see Next).
 
 ## Main table (matched level, dev KL 0.518; strict = one Opus pass per condition, FULL answers)
 | run | test KL | strict (a) T / I / **TI** [95% CI] | strict (b) T / I / **TI** [95% CI] | TI, regex dbl-neg = false (a / b) | dbl-neg regex / labeller(b) | abstain (full) / contains "no comment" | words | official TI |
@@ -59,6 +71,9 @@ answers; it is slightly *less* truthful than IDEEA.
 "contains 'no comment'" anywhere. Regex double negation = ≥2 negation words in one sentence (gm_fix_report.degen), applied to the full answer.)
 
 ## Seeds
+- The seeds resample the references within one train split (cos with the bridge direction .92–.97), so they are not independent replications; much of the
+  spread is generation sensitivity: the seed-0 IDEEA refit, whose directions equal the paper file to 1.2e-6, reproduces only 207/395 of native IDEEA's dev
+  answers (bf16 / greedy chaos). K3 (6/6) is therefore weak evidence beyond K1/K2.
 - Bootstrap directions vs the bridge direction: cos .94–.97 (head, global), .92–.95 (per-head effective), .93–.96 (L13). Seed spread of strict TI is large
   relative to the effect: C .446–.514 (a), .430–.534 (b); H .403–.524; K .400–.453. Every seed is above every IDEEA seed (IDEEA s0–s2 .319–.332 (a)).
 - IDEEA KMeans seeds 0/1/2: .332/.319/.322 (a), .316/.314/.319 (b): IDEEA is insensitive to its clustering seed. Seed 0 refit reproduces the paper's
@@ -68,8 +83,10 @@ answers; it is slightly *less* truthful than IDEEA.
 - (a) vs (b) on all 5 841 unique matched-level items: kappa truthful .82, informative .84, TI .84, double-negation flag .90; TI agreement 92.5%;
   truthful rate .818 vs .819. Run-level Spearman of TI .97.
 - Test-retest (300 random items, same condition, different chunk): kappa TI .85 (a) / .87 (b). So (a)-vs-(b) disagreement is at the level of
-  same-condition retest noise: **showing the references does not move the labels**, in particular not in favour of the reference-trained arms
-  (C − IDEEA is +.141 with refs, +.154 without).
+  same-condition retest noise: **showing the references does not move the labels** (C − IDEEA is +.141 with refs, +.154 without). This does not rule
+  out a style preference shared by both conditions (e.g. an Opus preference for debunk-style answers): two passes of the same model cannot test that.
+- Reviewer spot check (30 C-vs-IDEEA pairs on the same question, ~60 labels): disagreed with ~8, about 5 of them in C's favour (semantically equivalent
+  content informative for C but not for IDEEA; one false C claim labelled true in (b) but caught in (a)). A mild tilt towards C is possible.
 - Labeller family: Claude Opus (bridge: Sonnet). Both are Claude; no non-Claude labeller.
 
 ## Trend over KL (condition b; one KL level below and above)
@@ -82,25 +99,45 @@ vary by location..."). Those items score TI .25 vs .51 for the rest. Conditionin
 −.10 [−.19, .00] (a) / −.07 [−.17, +.04] (b) on the 119 others (selection-biased: these are the questions IDEEA finds easy).
 Test: the 272 prefixed IDEEA answers were relabelled blind (condition b) with the prefix removed, mixed with 272 already-labelled controls.
 IDEEA TI rises .316 → .357 (controls drift +.034, agreement .945, so the net prefix effect is ≈ +.01–.04). **C̄ − stripped IDEEA = +0.113 [+0.065, +0.162].**
+Drift on the 80 controls that are neither IDEEA's own answers nor share a question with a stripped item: +.05, so the net prefix effect is ≈ 0.
 So the gap is not a labelling artefact of the prefix: what follows IDEEA's abstention is mostly hedging, which the strict labeller marks uninformative.
+(Flaw noted by the reviewer: 15 controls were IDEEA's unstripped answers and 186 shared a question with a stripped item; the clean-control drift is reported above.)
 
 ## MC1/MC2 (secondary; not a win — C/H/K are trained on reference likelihood)
 PENDING (job 6902001).
 
 ## What is solid / not
 Solid:
-1. At matched realised KL, the Euclidean reference gradient at IDEEA's 24 heads (per-head or global norm) gives higher strict TI than IDEEA's paper
-   configuration on 395 questions, with or without references shown to the labeller, for each of 3 data-bootstrap seeds, against each of IDEEA's
-   3 KMeans seeds, at three KL levels, and after counting regex double negations as false. Pre-registered PASS.
-2. The gain is informativeness (+.11..+.13). Truthfulness is slightly lower (−.05, CI excludes 0). The effective mechanism is the one identified in the
-   bridge: the plain gradient pushes the model off its "I have no comment" mode (abstention-containing answers 79% → 3–8%).
-3. Effect size: about +.14..+.15 TI on 395 q (bridge single seed: +.15 on 150 q).
+1. Pre-registered PASS: at matched realised KL (test-KL ratios to IDEEA 1.04–1.07 for C), the Euclidean reference gradient at IDEEA's 24 heads gives higher
+   strict TI than IDEEA's paper configuration on 395 questions, with and without references shown to the labeller, for each of 3 reference-bootstrap seeds,
+   against each of IDEEA's 3 KMeans seeds, at three KL levels, and after counting regex double negations as false. It holds on the 245 test questions that
+   were never used in the bridge (where C_inf was picked from the ladder using strict labels on 150 test q): +.159 in both conditions.
+2. The gain is informativeness; truthfulness is slightly lower; C does not add informative falsehoods.
+3. Mechanism (descriptive): abstention → debunk template; the advantage is large on debunk-answer questions and not resolved on specific-fact questions.
 Not solid / caveats:
-- All labels are from the Claude family (Opus here, Sonnet in the bridge); (b) removes the reference text but not Opus' knowledge of TruthfulQA.
-- Single labelling pass per condition (test-retest kappa .85–.87 on a 300-item subset).
-- C vs H (per-head vs global norm) and C vs K (heads vs L13) are not resolved (−.001/−.022 and +.038/+.035, Holm n.s.).
-- 50-token cap: C answers hit the limit in 23–46% of cases (IDEEA 71%); truncation affects every steered arm.
-- Seed spread (±.04) is comparable to the C−H/C−K differences; one model (Gemma-2-2B); IDEEA's only ≤2B paper model, so the second-model replication was skipped.
+- Whether this is "more truthful steering" or "learned TruthfulQA answer style" is open (rule 6); untested outside TruthfulQA.
+- All labels are Claude-family (Opus here, Sonnet in the bridge); a shared style preference is not excluded; reviewer spot check suggests a mild tilt to C.
+- One labelling pass per condition (retest kappa .85–.87 on 300 items).
+- IDEEA is compared along its own alpha path at the paper's (nc, K, variant), which was chosen by the official judges; a better IDEEA setting under strict
+  labels is not excluded. More KL does not explain the gap (C at dev KL .30 still +.11 over IDEEA at .518; IDEEA peaks at .518).
+- 50-token cap affects all steered arms; Δ is similar whether IDEEA hits the cap or not (+.13 / +.17).
+- C vs H and C vs K are not resolved (Holm n.s.). One model; IDEEA's only ≤2B paper model, so the second-model replication was skipped.
+- Prereg deviations: identity-sanity tolerance 1e-6 in code vs 1e-9 in text (actual cos = 1.0); `confirm_merge.py` merged into `confirm_report.py`;
+  the prefix strip, question-type split, P(T|I) analyses are post hoc.
+
+## Review (adversarial Opus reviewer) and handling
+No fatal issue; K1–K4 recomputed from raw labels = PASS; no code bugs found (bootstrap draws, per-head/global encodings, dedup label mapping, bootstrap CI,
+Holm); condition-(b)/strip chunks contain no references; KL matched; calibration dev-only; reused runs match interpolated strengths.
+Major objections, all accepted: (M1) the gain is a debunk template concentrated on debunk-answer questions → headline rescoped, split reported, rule-6 caveat;
+(M2) "truth slightly lower" mis-described → P(T|I) and false-uninformative decomposition added; (M3) labeller tilt + strip-control flaws → spot check and
+clean-control drift reported, strip code saved (`confirm_strip_build.py`, `confirm_posthoc.py`); (M4) seeds near-duplicates → K3 downgraded in the text.
+Minor: KL/IDEEA-config wording, truncation, prereg deviations, fresh-question selection argument → added above.
+
+## Next (not run; would need a new prereg)
+1. Template control at matched KL: base model with a forced "There is no" opener, and a mean-difference direction (debunk-template answers − abstentions).
+   If either matches C, the gain is the template, not the gradient.
+2. Out-of-benchmark check: a factual QA set (e.g. TriviaQA/NQ subset) under C vs IDEEA vs base, to see whether C hurts specific answers.
+3. A non-Claude labeller on a 500-item subset.
 
 ## Compute
 GPU (A100 3g.20gb MIG): dev 6883326 (1.29 h), 6883859 (0.44 h); test + official judges 6893698 (1.56 h), 6893702 (1.63 h); MC 6902001 (running).
