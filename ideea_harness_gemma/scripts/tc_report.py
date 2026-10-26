@@ -115,10 +115,10 @@ if P2:
     data = json.load(open(os.path.expanduser("~/scratch/tqa_ctrl/data/triviaqa400.json")))
     recs = TB.load(P2); nq = len(data); qk = [str(j) for j in range(nq)]
     LT = {}
-    kp = f"{TB.KD}/key_trivia.json"
-    if os.path.exists(kp):
-        L = {int(x["id"]): (int(x["correct"]), int(x["abstain"])) for f in glob.glob(f"{ROOT}/blind_tc/trivia/labels_*.json") for x in json.load(open(f))}
-        K = json.load(open(kp))["items"]
+    kps = glob.glob(f"{TB.KD}/key_trivia*.json")
+    if kps:
+        L = {int(x["id"]): (int(x["correct"]), int(x["abstain"])) for f in glob.glob(f"{ROOT}/blind_tc/trivia*/labels_*.json") for x in json.load(open(f))}
+        K = [it for kp in kps for it in json.load(open(kp))["items"]]
         LT = {(it["q"], it["answer"]): L[it["id"]] for it in K if it["id"] in L}
         out["part2"]["opus_labels"] = [len(LT), len(K)]
         mlab = [(LT[(it["q"], it["answer"])][0]) for it in K if it["alias_match"] and (it["q"], it["answer"]) in LT]
@@ -139,13 +139,14 @@ if P2:
                 olab[j] = LT[(q, t)][0]
                 if not am[j]:
                     adj[j] = LT[(q, t)][0]
-        per[k] = {"acc": am, "abst": ab, "tmpl": tm, "wrong": (1 - am) * (1 - ab), "adj": adj, "adj_wrong": (1 - adj) * (1 - ab),
+        oab = np.array([LT[(q, t)][1] if (q, t) in LT else float(ab[j]) for j, (q, t) in enumerate(zip(qk, txt))], float)
+        per[k] = {"acc": am, "abst": ab, "opus_abst": oab, "opus_wrong": (1 - adj) * (1 - oab), "tmpl": tm, "wrong": (1 - am) * (1 - ab), "adj": adj, "adj_wrong": (1 - adj) * (1 - ab),
                   "kl": float(np.mean([R_[q]["kl_tok"] for q in qk])), "words": float(np.mean([len(t.split()) for t in txt]))}
     out["part2"]["table"] = {k: {"kl": f3(d["kl"]), "alias_acc": f3(d["acc"].mean()), "adj_acc": f3(d["adj"].mean()), "abst": f3(d["abst"].mean()),
-                                 "tmpl": f3(d["tmpl"].mean()), "wrong": f3(d["wrong"].mean()), "adj_wrong": f3(d["adj_wrong"].mean()),
+                                 "tmpl": f3(d["tmpl"].mean()), "wrong": f3(d["wrong"].mean()), "adj_wrong": f3(d["adj_wrong"].mean()), "opus_abst": f3(d["opus_abst"].mean()), "opus_wrong": f3(d["opus_wrong"].mean()),
                                  "precision_alias": f3(d["acc"].sum() / max(1, (1 - d["abst"]).sum())), "words": f3(d["words"])} for k, d in per.items()}
     if all(f"C_b{b}|mid" in per for b in (1, 2, 3)):
-        Cm = {m: np.mean([per[f"C_b{b}|mid"][m] for b in (1, 2, 3)], 0) for m in ("acc", "adj", "abst", "tmpl", "wrong", "adj_wrong")}
+        Cm = {m: np.mean([per[f"C_b{b}|mid"][m] for b in (1, 2, 3)], 0) for m in ("acc", "adj", "abst", "tmpl", "wrong", "adj_wrong", "opus_abst", "opus_wrong")}
         con = {}
         for ref in ("IDEEA_s0|mid", "base|mid", "ITI|mid"):
             if ref in per:

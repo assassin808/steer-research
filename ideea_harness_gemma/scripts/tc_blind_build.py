@@ -18,7 +18,7 @@ TN = re.compile(r"^\s*(there (is|are|'s) no|there isn't|there aren't|there is no
 
 
 def run_paths(split="test"):
-    st = json.load(open(TC + "/strengths.json"))
+    st = json.load(open(TC + "/strengths.json")) if os.path.exists(TC + "/strengths.json") else {}
     d = "results_gm/test_tc" if split == "test" else "results_gm/triviaqa_tc"
     P = {}
     if split == "test":
@@ -31,7 +31,7 @@ def run_paths(split="test"):
     P["F1|mid"] = f"{d}/forced_There_is_no.json"
     if split == "test":
         P["F2|mid"] = f"{d}/forced_There_is_no_scientific_evidence.json"
-    for nm in ("T_md", "T_g"):
+    for nm in [n for n in ("T_md", "T_g") if n in st]:
         for lv in (("lo", "mid", "hi") if split == "test" else ("mid",)):
             P[f"{nm}|{lv}"] = f"{d}/tc_{nm}_{st[nm]['strengths'][lv]:g}.json"
     return P
@@ -94,6 +94,7 @@ if __name__ == "__main__":
         sub = sorted(np.random.RandomState(20261026).choice(len(qs), 125, replace=False))
         subq = [qs[j] for j in sub]
         out = {"primary": [], "secondary": []}
+        parts = sys.argv[2:] or ["primary", "secondary"]
         for k in ("IDEEA_s0|mid", "C_b1|mid", "C_b2|mid", "C_b3|mid"):
             for q in subq:
                 out["primary"].append({"uid": f"{k}#{q}", "run": k, "q": q})
@@ -102,7 +103,7 @@ if __name__ == "__main__":
                 for q in qs:
                     out["secondary"].append({"uid": f"{k}#{q}", "run": k, "q": q})
         for cond in "ab":
-            for part in ("primary", "secondary"):
+            for part in parts:
                 items = []
                 for x in out[part]:
                     i = int(x["q"]); it = {"uid": x["uid"], "question": df.loc[i, "Question"], "answer": full(recs[x["run"]][x["q"]]["response"])}
@@ -124,13 +125,18 @@ if __name__ == "__main__":
                 if tqa_abst(t):
                     continue
                 uniq.setdefault((q, t), {"runs": set(), "match": alias_match(t, x["aliases"])})["runs"].add(k)
+        import glob as _g
+        prev = {(it["q"], it["answer"]) for f in _g.glob(f"{KD}/key_trivia*.json") for it in json.load(open(f))["items"]}
+        tag = "trivia" if not prev else f"trivia{len(_g.glob(KD + '/key_trivia*.json')) + 1}"
+        prev_match = sum(1 for f in _g.glob(f"{KD}/key_trivia*.json") for it in json.load(open(f))["items"] if it["alias_match"])
+        uniq = {k: v for k, v in uniq.items() if k not in prev}
         nm = [k for k, v in uniq.items() if not v["match"]]
         mt = sorted([k for k, v in uniq.items() if v["match"]], key=lambda z: (int(z[0]), z[1]))
         rs = np.random.RandomState(31)
-        mt_s = [mt[j] for j in rs.choice(len(mt), min(100, len(mt)), replace=False)]
+        mt_s = [mt[j] for j in rs.choice(len(mt), min(max(0, 100 - prev_match), len(mt)), replace=False)] if not prev else []
         items = sorted(nm, key=lambda z: (int(z[0]), z[1])) + mt_s
         perm = rs.permutation(len(items)); ids = rs.choice(np.arange(100000, 999999), len(items), replace=False)
-        D = ROOT + "/blind_tc/trivia"; os.makedirs(D, exist_ok=True)
+        D = ROOT + "/blind_tc/" + tag; os.makedirs(D, exist_ok=True)
         rows, key = [], []
         for j, k in enumerate(perm):
             q, t = items[k]; x = data[int(q)]
@@ -140,5 +146,5 @@ if __name__ == "__main__":
         nch = int(np.ceil(len(rows) / 250)); bounds = np.linspace(0, len(rows), nch + 1).astype(int)
         for c in range(nch):
             json.dump(rows[bounds[c]:bounds[c + 1]], open(f"{D}/chunk_{c:02d}.json", "w"), indent=0)
-        json.dump({"runs": P, "items": key}, open(f"{KD}/key_trivia.json", "w"))
+        json.dump({"runs": P, "items": key}, open(f"{KD}/key_{tag}.json", "w"))
         print("trivia items", len(rows), "non-match", len(nm), "match sample", len(mt_s), nch, "chunks")
