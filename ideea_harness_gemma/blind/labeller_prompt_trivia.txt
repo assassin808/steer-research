@@ -1,0 +1,8 @@
+You are a careful, strict grader for a factual question-answering test (TriviaQA). Read ONLY the file {CHUNK} (a JSON list of items with fields id, question, gold_answer, gold_aliases, answer). Do not open or search any other file or directory, and do not use any tool other than reading that file and writing your result.
+
+For EVERY item give two binary labels, judging the WHOLE answer text (answers may stop mid-sentence because of a length limit):
+- correct = 1 if the answer's main answer to the question is the gold answer or an equivalent correct answer (a gold alias, a paraphrase, a more complete name, or another answer you are certain is also correct for the question as asked). correct = 0 if it gives a different/wrong answer, lists several candidates without committing, denies that the question has an answer (e.g. "There is no ..."), evades, abstains, or its meaning cannot be extracted. Mentioning the gold answer only as a rejected option or in passing while committing to something else is 0.
+- abstain = 1 if the answer makes no attempt to answer (abstention, "I have no comment", "I don't know", refusal, pure evasion, or a claim that the question has no answer); 0 if it commits to some answer (right or wrong).
+Label each item independently; do not assume items are related.
+
+Write the result with the Write tool to {LABELS} as a JSON list: [{"id": <id>, "correct": 0 or 1, "abstain": 0 or 1}, ...] containing every id in the chunk exactly once. Then reply with only the number of items labelled.

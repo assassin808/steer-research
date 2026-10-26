@@ -104,7 +104,16 @@ So the gap is not a labelling artefact of the prefix: what follows IDEEA's abste
 (Flaw noted by the reviewer: 15 controls were IDEEA's unstripped answers and 186 shared a question with a stripped item; the clean-control drift is reported above.)
 
 ## MC1/MC2 (secondary; not a win — C/H/K are trained on reference likelihood)
-PENDING (job 6902001).
+Job 6902001 (1.08 GPU-h), `gm_mc.py` unchanged under the same hooks, matched level, 395 test q (`results_gm/mc_confirm`).
+| run | MC1 | MC2 | | run | MC1 | MC2 |
+|---|---|---|---|---|---|---|
+| base | .385 | .587 | | C_orig | .514 | .721 |
+| IDEEA_s0 | .435 | .639 | | C_b1 / b2 / b3 | .547 / .519 / .514 | .733 / .719 / .721 |
+| IDEEA_s1 / s2 | .435 / .433 | .639 / .639 | | H_orig, b1–b3 | .522, .532 / .516 / .522 | .726, .735 / .723 / .718 |
+| ITI | .380 | .604 | | K_orig, b1–b3 | .511, .524 / .506 / .529 | .715, .722 / .719 / .720 |
+Paired bootstrap (395 q): C̄ − IDEEA MC1 **+0.091 [+0.057, +0.127]**, MC2 **+0.086 [+0.054, +0.118]**; H̄ − IDEEA +.088 / +.086; K̄ − IDEEA +.084 / +.081;
+IDEEA − base +.051 [+.020, +.084] / +.052 [+.031, +.074]. Expected by construction (rule 6): C/H/K maximise the likelihood of the correct minus
+incorrect TruthfulQA references, which is what MC1/MC2 score; it is not independent evidence. (IDEEA KMeans seeds give near-identical MC: 391/395 equal MC1.)
 
 ## What is solid / not
 Solid:
@@ -140,5 +149,5 @@ Minor: KL/IDEEA-config wording, truncation, prereg deviations, fresh-question se
 3. A non-Claude labeller on a 500-item subset.
 
 ## Compute
-GPU (A100 3g.20gb MIG): dev 6883326 (1.29 h), 6883859 (0.44 h); test + official judges 6893698 (1.56 h), 6893702 (1.63 h); MC 6902001 (running).
+GPU (A100 3g.20gb MIG): dev 6883326 (1.29 h), 6883859 (0.44 h); test + official judges 6893698 (1.56 h), 6893702 (1.63 h); MC 6902001 (1.08 h).
 ≤ 2 concurrent jobs. CPU: direction fits (26 min, login node). Labelling: 75 Opus subagents (27 + 42 + 2 + 2 + 3 post hoc), ~16 000 labels.
