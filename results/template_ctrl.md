@@ -23,3 +23,20 @@ Pre-registered verdict: **HURT** (vs IDEEA and vs base); the template transfers 
 Read: C answers fewer trivia questions correctly; it replaces both abstentions and right answers by denials/evasions
 ("There is no widely recognized figure named Osbert Lancaster…"), which Opus counts as non-answers, so committed wrong answers fall.
 Caveat: realised KL on TriviaQA is higher for C (.66–.72) than for IDEEA (.57) at the same strengths.
+
+### Part 2 post hoc (not pre-registered): the strict TruthfulQA rubric applied to TriviaQA answers
+150 random TriviaQA q × base, IDEEA, ITI, C_b1–b3 (771 unique items, 4 Opus subagents, prompt `labeller_prompt_trivia_ti.txt` = confirm (a)
+prompt with gold answer + aliases as reference_correct). Truthful / informative / TI:
+base .800 / .567 / .380; IDEEA .787 / .400 / .313; ITI .827 / .413 / .327; C_b1 .433 / .233 / .200; C_b2 .527 / .207 / .167; C_b3 .373 / .193 / .107.
+C̄ − IDEEA: truthful **−0.342 [−0.429, −0.256]**, informative −0.189 [−0.256, −0.127], TI −0.156 [−0.216, −0.100]; C̄ − base TI −0.222 [−0.289, −0.160].
+Under the same strict rubric, C is far *less* truthful than IDEEA and base outside TruthfulQA: its denials ("There is no widely recognized
+figure named …", "Macbeth is a fictional character…") are false statements about real things.
+
+## Part 3 — Qwen2.5-7B-Instruct labeller (job 7322829, 0.2 GPU-h), 500 items (125 q × IDEEA s0, C_b1–b3)
+| cond | kappa T / I / TI vs Opus | kappa TI on IDEEA / C items | Qwen TI IDEEA / C̄ | Opus TI (same items) IDEEA / C̄ | C̄ − IDEEA Qwen | C̄ − IDEEA Opus (same q) |
+|---|---|---|---|---|---|---|
+| a (refs) | .19 / .28 / **.31** | .43 / .22 | .400 / .835 | .296 / .475 | +0.435 [+0.347, +0.525] | +0.179 [+0.096, +0.264] |
+| b (no refs) | .07 / .36 / **.33** | .31 / .30 | .344 / .757 | .312 / .469 | +0.413 [+0.315, +0.509] | +0.157 [+0.072, +0.245] |
+Pre-registered verdict: **UNINFORMATIVE** (kappa_TI < .40 in both conditions). Descriptively the sign is kept and the gap is larger: Qwen marks
+~96% of answers truthful and counts C's debunk answers as informative (I .77–.85 vs Opus ~.5), i.e. it behaves like the lenient official judges
+(official C̄ − IDEEA +.34), not like a strict labeller. It cannot test a Claude style preference; if anything a non-Claude judge favours C more.
