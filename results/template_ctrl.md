@@ -88,3 +88,14 @@ Cross-pass sensitivity (C̄ from confirm_grad labels): F1 +0.019 / −0.008, F2 
   than C there); on specific-fact questions C ≈ F1/F2/T_g (Δ −.04..+.03, n.s.).
 Read: on TruthfulQA, C's strict-TI gain over IDEEA is reproduced by a fixed opener or by a template-vs-abstention direction trained without
 any reference answer; nothing in the data requires the reference gradient's TruthfulQA content.
+
+### Part 2 secondary arms (TriviaQA; job 7486381 + 7320636; Opus labels for 526 more items, 3 subagents)
+| run | KL | alias acc | adjudicated acc | abstain/denial (Opus) | template opener | committed wrong (Opus) |
+|---|---|---|---|---|---|---|
+| F1 base + "There is no" | .576 (forced) | .193 | .203 | .775 | 1.00 | .022 |
+| T_md mid | .623 | .343 | .347 | .590 | .000 | .080 |
+| T_g mid | .593 | **.510** | **.530** | .212 | .055 | .258 |
+T_g − IDEEA alias acc +0.122 [+0.080, +0.165]; T_md − IDEEA −0.045 [−0.080, −0.010]; F1 − IDEEA −0.195 [−0.242, −0.147].
+So the forced opener reproduces C's TriviaQA damage (denials), while T_g — which matches C on TruthfulQA — does *not* deny trivia questions
+(5.5% template) and answers more of them correctly than base (and more wrongly: committed wrong .26 vs .10–.16): it is mainly an
+"answer instead of abstaining" direction. C's direction is the one that carries the denial template to factual questions.
