@@ -50,3 +50,41 @@ Job 7320636 (forced openers, features, fit, dev sweep; ~0.6 GPU-h). Template dat
 - Dev KL scans (395 dev q): T_md 0.5→.005, 1→.022, 2→.118, 4→.594, 8→1.08; T_g .5→.169, 1→.315, 2→.598, 4→1.11, 8→1.66.
   Strengths for dev KL .30/.518/.80: T_md 2.98/3.77/5.65; T_g 0.95/1.71/2.77.
 - Forced openers (test, not KL-matched): F1 "There is no" KL_forced .358 per token (8.5 nats per answer); F2 "There is no scientific evidence" .609 (15.8 nats).
+
+### Part 1 results — new Opus strict pass (38 subagents; a: 3 386 items, b: 4 785 items; 0 missing)
+Test gens job 7486379 (T at three KL levels, 0.2 GPU-h). Drift vs confirm_grad labels on 1 909 / 1 942 identical items: agreement .954 / .946,
+kappa TI .90 / .88, TI .372 vs .375 (a), .372 vs .369 (b): the new pass is on the same scale.
+| run | test KL | template opener | abstain (full) / "no comment" | dbl-neg rx | strict (a) T / I / **TI** | strict (b) T / I / **TI** |
+|---|---|---|---|---|---|---|
+| base | 0 | .00 | .70 / .71 | .00 | .87 / .28 / **.157** | .88 / .28 / **.159** |
+| IDEEA s0 | .514 | .01 | .03 / .79 | .01 | .85 / .43 / **.334** | .84 / .43 / **.332** |
+| C_b1 / b2 / b3 | .536–.549 | .54 / .54 / .63 | ≤.04 / ≤.08 | .06–.17 | C̄ **.469** | C̄ **.470** |
+| **F1** base + "There is no" | .358 (forced) | 1.00 | .02 / .14 | .04 | .77 / .56 / **.453** | .75 / .60 / **.478** |
+| **F2** base + "There is no scientific evidence" | .609 (forced) | 1.00 | .00 / .19 | .04 | .67 / .54 / **.453** | .68 / .60 / **.476** |
+| **T_md** mid | .525 | .00 | .16 / .82 | .01 | .89 / .31 / **.230** | .89 / .33 / **.243** |
+| **T_g** mid | .517 | .34 | .00 / .00 | .02 | .84 / .59 / **.471** | .85 / .57 / **.453** |
+| T_md lo / hi (b) | .329 / .901 | .00 | | | | TI .225 / .243 |
+| T_g lo / hi (b) | .316 / .797 | .32 / .38 | | | | TI **.570** / .311 |
+
+Pre-registered contrasts Δ_X = C̄ − X (strict TI, 395 q, paired bootstrap):
+| X | (a) | (b) | X − IDEEA (b) | gain recovered (a / b) | debunk-q Δ_X (b) | specific-q Δ_X (b) |
+|---|---|---|---|---|---|---|
+| F1 | +0.016 [−0.024, +0.057] | −0.008 [−0.048, +0.032] | +0.147 [+0.091, +0.203] | 88% / 106% | +0.021 [−0.041, +0.086] | −0.025 [−0.076, +0.024] |
+| F2 | +0.016 [−0.027, +0.058] | −0.006 [−0.049, +0.037] | +0.144 [+0.086, +0.203] | 88% / 104% | −0.071 [−0.141, −0.002] | +0.030 [−0.024, +0.084] |
+| T_md | +0.239 [+0.188, +0.289] | +0.227 [+0.177, +0.276] | −0.089 [−0.137, −0.043] | −77% / −64% | +0.450 | +0.105 |
+| T_g | −0.002 [−0.046, +0.042] | +0.017 [−0.024, +0.058] | +0.122 [+0.071, +0.170] | 101% / 88% | +0.129 [+0.064, +0.193] | −0.044 [−0.095, +0.007] |
+(C̄ − IDEEA in this pass: +0.135 [+0.087, +0.183] (a), +0.138 [+0.090, +0.186] (b); debunk-q +0.31–0.34, specific-q +0.02–0.05 n.s. — replicates confirm_grad.)
+Cross-pass sensitivity (C̄ from confirm_grad labels): F1 +0.019 / −0.008, F2 +0.019 / −0.006, T_g +0.002 / +0.017, T_md +0.242 / +0.227 — same.
+
+**Pre-registered verdict: TEMPLATE-SUFFICIENT.** Three of four controls reach C̄ in both conditions (CI of C̄ − X includes 0): F1, F2 and T_g.
+- Forcing the base model to start with "There is no" (no steering, KL .36 — less than C's .54) gives strict TI .453/.478 = C̄ (.469/.470).
+  The prediction written in the prereg (F1/F2 fall well short) was wrong. F1/F2 trade truth for informativeness the same way C does
+  (truthful .67–.77 vs C̄ .80–.81; informative .54–.60 vs C̄ .53–.53).
+- T_g, the same gradient estimator as C fitted on C's own *train* debunk answers vs abstentions (no TruthfulQA references, no truth labels),
+  matches C at matched KL and exceeds it at dev KL .30 (.570 vs C̄ .470 (b), post-hoc comparison across levels). cos(T_g, C) ≈ .5.
+- T_md (activation mean-difference) does not produce the template (0% openers, still 82% "no comment") and is below IDEEA: the template is
+  reachable from the gradient/score-feature side, not from activation differences — consistent with the bridge's mass-mean ⟂ gradient result.
+- Question-type split: on debunk-answer questions the template controls recover all of C's advantage (F1 Δ +.02, F2 −.07, i.e. F2 is *better*
+  than C there); on specific-fact questions C ≈ F1/F2/T_g (Δ −.04..+.03, n.s.).
+Read: on TruthfulQA, C's strict-TI gain over IDEEA is reproduced by a fixed opener or by a template-vs-abstention direction trained without
+any reference answer; nothing in the data requires the reference gradient's TruthfulQA content.
