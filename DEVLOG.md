@@ -219,3 +219,25 @@ The running geometry agent was redirected accordingly; it must update its prereg
 - REVIEWED · adversarial Opus review: no fatal; numbers recomputed; MAJOR M1–M7 accepted (T_g split claim corrected, truthfulness contrasts added, "no reference needed" rests on F1 only, post-hoc neutral controls, full TriviaQA adjudication + label-id collision fix, denial column, Qwen rule flag).
 - DECIDED · C's TruthfulQA strict-TI win = learned answer style (template + anti-abstention), not more truthful steering; do not claim it as a truthfulness method. confirm_grad MC1/MC2 filled (C̄ − IDEEA +.09, rule 6).
 - LESSON · On TruthfulQA, run a forced-prefix control (base + the winning arm's most common opener) before crediting any steering direction; strict TI rewards not abstaining and the debunk form.
+
+## 2026-10-27 — weekday/month calibration of the geometry toolkit (results/weekday_calib_prereg.md)
+- PREREGISTERED · commit 910da50 before any run: Gemma-2-2B-it weekday (546) / month (792) prompts, last-token residual at all layers;
+  TwoNN, Isomap distortion, cyclicity of class distances, local field, centroid curve (naive + split-half corrected turning, top-1/2 share),
+  nulls flat-Gaussian / flat-line / blob / shuffle / resample; old O1 flow turning vs R-shift, O2 MMD paths, O3 geo_ratio + OT R²_s50; optional steering.
+- TRIED · Narval is in a power-outage reservation (POWEROUT20261027, until 2026-11-03): GPU job 7499750 could not start → cancelled.
+  Extraction + steering run on the login node CPU instead (fp32, no padding via length buckets; steering reuses the prefix KV cache, last token only).
+- AMENDMENT A1 (technical, before any activation was seen): Gemma answers "The answer is **Thursday**", so the forced prefix is
+  "The answer is **" and class tokens are the no-space day/month tokens (all single tokens). Qwen2.5-1.5B weights are incomplete in the cache → second model skipped.
+- FOUND (synthetic, before real data) · noisy 7-class circle in 100-d: TwoNN ≈ 26 (noise dominates the 1st/2nd-NN scale), distortion 0.03
+  (a circle's chord is monotone in arc length → 1−ρ has no power for circles by construction); **mean** turning of a closed polygon is
+  ≥ 360/C for ANY closed curve (a back-and-forth line gives 51° too) → amendment A2: centroid turning is read as the **median** corrected
+  angle (circle 50°, line null ≈ 0–7°) and top-1 split-half share (circle .51, line .999). Mean values still reported.
+- FOUND · Gemma weekday accuracy 0.28 overall (k=1,2,3: 1.00/1.00/0.79; k≥4: 0–0.21) → the answer is only computed for small k.
+  Labels by construction: class y's (z,k) multiset is a cyclic shift of class 0's, so any z-equivariant code makes y-centroids cyclic
+  even if the answer is never computed (confound; z labels reported alongside as the cleaner control).
+- AMENDMENT A3 (estimator bug, after seeing data): random within-class split halves give *negative* cross-Gram eigenvalues for y labels
+  (halves' (z,k) composition is complementary). Split halves are now by template (3 of 6 templates, all 10 partitions).
+- AMENDMENT A4 (post hoc, labelled): new S7 = cyclic order of class centroids in the split-half top-2 subspace (adj = share of true
+  neighbours adjacent in angular order; wind = winding). Reason: top-2-PC angular order of weekday centroids is perfect at most layers
+  (y and z), while full-space turning is ~100° (circle + simplex/identity component + noise) — the prereg turning statistic mixes them.
+- TRIED · multi-threaded BLAS inside multiprocessing workers stalls on the login node (no output after 15 min); single-thread BLAS fixes it.
