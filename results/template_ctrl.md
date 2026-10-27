@@ -40,3 +40,13 @@ figure named …", "Macbeth is a fictional character…") are false statements a
 Pre-registered verdict: **UNINFORMATIVE** (kappa_TI < .40 in both conditions). Descriptively the sign is kept and the gap is larger: Qwen marks
 ~96% of answers truthful and counts C's debunk answers as informative (I .77–.85 vs Opus ~.5), i.e. it behaves like the lenient official judges
 (official C̄ − IDEEA +.34), not like a strict labeller. It cannot test a Claude style preference; if anything a non-Claude judge favours C more.
+
+## Part 1 (partial) — template directions and forced openers
+Job 7320636 (forced openers, features, fit, dev sweep; ~0.6 GPU-h). Template data: 200 train questions, 493 debunk answers (C_b1–b3 dev), 200 abstentions.
+- Split-half reliability (per-head effective cos): T_md .997, T_g .981.
+- **T_g (C's estimator on debunk-vs-abstention texts) has cos .50–.57 with C** (global .54–.57, per-head effective .49–.53), vs ITI mass-mean .02;
+  T_md (activation mean-diff) is orthogonal to C (.03–.05) and partly aligned with the ITI mass-mean (.17–.22); T_md ⟂ T_g (.02).
+  So roughly half of C's direction (by cosine) is shared with a pure "debunk template vs abstain" gradient.
+- Dev KL scans (395 dev q): T_md 0.5→.005, 1→.022, 2→.118, 4→.594, 8→1.08; T_g .5→.169, 1→.315, 2→.598, 4→1.11, 8→1.66.
+  Strengths for dev KL .30/.518/.80: T_md 2.98/3.77/5.65; T_g 0.95/1.71/2.77.
+- Forced openers (test, not KL-matched): F1 "There is no" KL_forced .358 per token (8.5 nats per answer); F2 "There is no scientific evidence" .609 (15.8 nats).
