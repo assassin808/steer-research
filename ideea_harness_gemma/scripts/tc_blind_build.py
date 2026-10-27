@@ -29,6 +29,8 @@ def run_paths(split="test"):
                      ("C_b2", "br_C_inf_b2_2.0045"), ("C_b3", "br_C_inf_b3_2.1361")):
             P[f"{k}|mid"] = f"{d}/{s}.json"
     P["F1|mid"] = f"{d}/forced_There_is_no.json"
+    if os.path.exists(f"{ROOT}/{d}/noabst_comment.json"):  # [post review, exploratory] neutral non-abstention controls
+        P["F0|mid"] = f"{d}/noabst_comment.json"; P["FThe|mid"] = f"{d}/forced_The.json"
     if split == "test":
         P["F2|mid"] = f"{d}/forced_There_is_no_scientific_evidence.json"
     for nm in [n for n in ("T_md", "T_g") if n in st]:
@@ -50,6 +52,8 @@ def build(cond, recs, runs, seed, chunk, tag):
     items = sorted(uniq.items(), key=lambda x: (int(x[0][0]), x[0][1]))
     perm = np.random.RandomState(seed).permutation(len(items))
     ids = np.random.RandomState(seed + 1).choice(np.arange(100000, 999999), len(items), replace=False)
+    if tag.endswith("2"):  # disjoint id range from the main pass (labels of a and a2 are merged by id)
+        ids = ids + 1000000
     D = f"{ROOT}/blind_tc/{tag}"; os.makedirs(D, exist_ok=True)
     rows, key = [], []
     for j, k in enumerate(perm):
@@ -88,6 +92,11 @@ if __name__ == "__main__":
         mid = [k for k in P if k.endswith("|mid")]
         build("a", recs, mid, 1101, 220, "a")
         build("b", recs, list(P), 2202, 220, "b")
+    elif what == "post":  # [post review, exploratory] F0 / FThe test runs, conditions a and b, separate keys a2 / b2
+        P = run_paths("test"); recs = load(P)
+        runs = ["F0|mid", "FThe|mid"]; recs = {k: v for k, v in recs.items() if k in runs + ["base|mid"]}
+        build("a", recs, runs, 5505, 220, "a2")
+        build("b", recs, runs, 6606, 220, "b2")
     elif what == "qwen":
         P = run_paths("test"); recs = load(P)
         qs = sorted(recs["base|mid"], key=int)
@@ -130,6 +139,10 @@ if __name__ == "__main__":
         tag = "trivia" if not prev else f"trivia{len(_g.glob(KD + '/key_trivia*.json')) + 1}"
         prev_match = sum(1 for f in _g.glob(f"{KD}/key_trivia*.json") for it in json.load(open(f))["items"] if it["alias_match"])
         uniq = {k: v for k, v in uniq.items() if k not in prev}
+        if len(sys.argv) > 2 and sys.argv[2] == "alias":  # [post review] adjudicate every remaining alias-matched item
+            uniq = {k: v for k, v in uniq.items() if v["match"]}
+            for v in uniq.values():
+                v["match"] = False  # route all into the labelled list below (key keeps the true flag via alias_match recompute)
         nm = [k for k, v in uniq.items() if not v["match"]]
         mt = sorted([k for k, v in uniq.items() if v["match"]], key=lambda z: (int(z[0]), z[1]))
         rs = np.random.RandomState(31)
@@ -142,7 +155,7 @@ if __name__ == "__main__":
             q, t = items[k]; x = data[int(q)]
             al = sorted({a for a in x["aliases"] if a == a.strip()}, key=len)[:12]
             rows.append({"id": int(ids[j]), "question": x["question"], "gold_answer": x["answer"], "gold_aliases": al, "answer": t})
-            key.append({"id": int(ids[j]), "q": q, "answer": t, "runs": sorted(uniq[(q, t)]["runs"]), "alias_match": bool(uniq[(q, t)]["match"])})
+            key.append({"id": int(ids[j]), "q": q, "answer": t, "runs": sorted(uniq[(q, t)]["runs"]), "alias_match": bool(alias_match(t, x["aliases"]))})
         nch = int(np.ceil(len(rows) / 250)); bounds = np.linspace(0, len(rows), nch + 1).astype(int)
         for c in range(nch):
             json.dump(rows[bounds[c]:bounds[c + 1]], open(f"{D}/chunk_{c:02d}.json", "w"), indent=0)

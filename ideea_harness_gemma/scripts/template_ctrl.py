@@ -213,6 +213,47 @@ def stage_forced(a):
     print(json.dumps(summ), flush=True)
 
 
+def stage_noabst(a):
+    """[post review, exploratory] base model with every vocabulary token whose text contains 'comment' banned (bad_words_ids), so the
+    harness abstention "I have no comment" is impossible. Realised KL(processed || base) per token along the answer (exact: the processed
+    distribution is base renormalised over the allowed tokens)."""
+    import torch
+    import ng_lib as L
+    from common.config import deterministic
+    E, ctx = make_ctx(a.split)
+    tok, model = L.load_model(torch.bfloat16)
+    od = os.path.join(ROOT, "results_gm", a.split + "_" + a.tag); os.makedirs(od, exist_ok=True)
+    path = f"{od}/noabst_comment.json"
+    if os.path.exists(path):
+        print("exists", path); return
+    ban = [[i] for i in range(len(tok)) if "comment" in tok.convert_ids_to_tokens(i).lower()]
+    print("banned tokens", len(ban), flush=True)
+    deterministic(0)
+    lg = __import__("common.modeling", fromlist=["LocalGenerator"]).LocalGenerator(model, tok, True, a.bs, ctx.task.max_new_tokens, None)
+    stops = L.stop_ids(tok); records = []; t0 = time.time()
+    reqs = ctx.requests
+    for b0 in range(0, len(reqs), a.bs):
+        batch = reqs[b0:b0 + a.bs]
+        enc = lg._encode([r.chat for r in batch]).to("cuda"); P = enc["input_ids"].shape[1]
+        with torch.no_grad():
+            out = model.generate(**enc, max_new_tokens=ctx.task.max_new_tokens, do_sample=False, temperature=None, top_p=None, top_k=None,
+                                 bad_words_ids=ban, output_logits=True, output_scores=True, return_dict_in_generate=True)
+        gen = out.sequences[:, P:]; Tg = gen.shape[1]
+        lens = [next((j + 1 for j, t in enumerate(row) if t in stops), len(row)) for row in gen.tolist()]
+        texts = tok.batch_decode(gen, skip_special_tokens=True)
+        for i, r in enumerate(batch):
+            kl = []
+            for t in range(lens[i]):
+                lp = torch.log_softmax(out.scores[t][i].float(), -1); lb = torch.log_softmax(out.logits[t][i].float(), -1)
+                m = torch.isfinite(lp)
+                kl.append(float((lp[m].exp() * (lp[m] - lb[m])).sum()))
+            records.append({"key": r.key, "meta": r.meta, "response": ctx.task.parse(texts[i]), "kl_tok": float(np.mean(kl)), "ntok": int(lens[i])})
+    summ = {"spec": "noabst_comment", "method": "noabst", "n_banned": len(ban), "n": len(records), "kl_tok_mean": float(np.mean([x["kl_tok"] for x in records])),
+            "mean_ntok": float(np.mean([x["ntok"] for x in records])), "gen_seconds": time.time() - t0}
+    json.dump({"summary": summ, "records": records}, open(path, "w"))
+    print(json.dumps(summ), flush=True)
+
+
 def c_for(name, targets, tag="tc"):
     od = os.path.join(ROOT, "results_gm", "development_" + tag)
     pts = [(c, json.load(open(f"{od}/tc_{name}_{c:g}.json"))["summary"]["kl_tok_mean"]) for c in T_GRID]
@@ -232,7 +273,7 @@ def c_for(name, targets, tag="tc"):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["feats", "fit", "eval", "forced", "cfor"])
+    ap.add_argument("stage", choices=["feats", "fit", "eval", "forced", "cfor", "noabst"])
     ap.add_argument("--specs", nargs="*", default=[]); ap.add_argument("--calib", nargs="*", default=[])
     ap.add_argument("--split", default="test"); ap.add_argument("--tag", default="tc"); ap.add_argument("--bs", type=int, default=8)
     ap.add_argument("--opener", default="There is no"); ap.add_argument("--names", nargs="*", default=["T_md", "T_g"])
@@ -245,4 +286,4 @@ if __name__ == "__main__":
         json.dump(res, open(f"{TC}/strengths.json", "w"), indent=1)
         print(json.dumps(res))
     else:
-        {"feats": stage_feats, "fit": stage_fit, "eval": stage_eval, "forced": stage_forced}[a.stage](a)
+        {"feats": stage_feats, "fit": stage_fit, "eval": stage_eval, "forced": stage_forced, "noabst": stage_noabst}[a.stage](a)

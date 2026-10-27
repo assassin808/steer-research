@@ -40,10 +40,12 @@ if P1:
         if not os.path.exists(kp):
             continue
         L = {}
-        for f in glob.glob(f"{ROOT}/blind_tc/{cond}/labels_*.json"):
+        for f in glob.glob(f"{ROOT}/blind_tc/{cond}/labels_*.json") + glob.glob(f"{ROOT}/blind_tc/{cond}2/labels_*.json"):
             for x in json.load(open(f)):
                 L[int(x["id"])] = (int(x["truthful"]), int(x["informative"]), int(x.get("double_negation", 0)))
         K = json.load(open(kp)); lab = {}; miss = 0
+        if os.path.exists(f"{TB.KD}/key_{cond}2.json"):
+            K = {"items": K["items"] + json.load(open(f"{TB.KD}/key_{cond}2.json"))["items"]}
         for it in K["items"]:
             if it["id"] not in L:
                 miss += 1; continue
@@ -80,7 +82,7 @@ if P1:
         con[f"Cbar|{c}"] = float(Cb.mean())
         con[f"Cbar-IDEEA|{c}"] = bci(Cb - Id)
         con[f"Cbar-IDEEA|{c}|split"] = {"debunk": bci((Cb - Id)[NEG]), "specific": bci((Cb - Id)[~NEG])}
-        for X in ("F1|mid", "F2|mid", "T_md|mid", "T_g|mid", "T_md|lo", "T_md|hi", "T_g|lo", "T_g|hi", "base|mid"):
+        for X in ("F1|mid", "F2|mid", "T_md|mid", "T_g|mid", "T_md|lo", "T_md|hi", "T_g|lo", "T_g|hi", "base|mid", "F0|mid", "FThe|mid"):
             if X in per and f"ti_{c}" in per[X]:
                 x = per[X][f"ti_{c}"]
                 con[f"Cbar-{X}|{c}"] = {"ti": bci(Cb - x), "t": bci(Ct - per[X][f"t_{c}"]), "i": bci(Ci - per[X][f"i_{c}"]),
@@ -117,9 +119,12 @@ if P2:
     LT = {}
     kps = glob.glob(f"{TB.KD}/key_trivia*.json")
     if kps:
-        L = {int(x["id"]): (int(x["correct"]), int(x["abstain"])) for f in glob.glob(f"{ROOT}/blind_tc/trivia*/labels_*.json") for x in json.load(open(f))}
-        K = [it for kp in kps for it in json.load(open(kp))["items"]]
-        LT = {(it["q"], it["answer"]): L[it["id"]] for it in K if it["id"] in L}
+        K, LT = [], {}
+        for kp in kps:  # labels joined to keys PER SET (ids are only unique within a set)
+            tag = os.path.basename(kp)[4:-5]
+            L = {int(x["id"]): (int(x["correct"]), int(x["abstain"])) for f in glob.glob(f"{ROOT}/blind_tc/{tag}/labels_*.json") for x in json.load(open(f))}
+            Ki = json.load(open(kp))["items"]; K += Ki
+            LT.update({(it["q"], it["answer"]): L[it["id"]] for it in Ki if it["id"] in L})
         out["part2"]["opus_labels"] = [len(LT), len(K)]
         mlab = [(LT[(it["q"], it["answer"])][0]) for it in K if it["alias_match"] and (it["q"], it["answer"]) in LT]
         out["part2"]["alias_match_opus_precision"] = [float(np.mean(mlab)) if mlab else None, len(mlab)]
@@ -135,23 +140,24 @@ if P2:
         tm = np.array([bool(TN.match(t)) for t in txt], float)
         adj = am.copy(); olab = np.full(nq, np.nan)
         for j, (q, t) in enumerate(zip(qk, txt)):
-            if (q, t) in LT:
+            if (q, t) in LT:  # [post review] Opus label overrides alias matching wherever an item was labelled (all answered items)
                 olab[j] = LT[(q, t)][0]
-                if not am[j]:
-                    adj[j] = LT[(q, t)][0]
+                adj[j] = LT[(q, t)][0]
         oab = np.array([LT[(q, t)][1] if (q, t) in LT else float(ab[j]) for j, (q, t) in enumerate(zip(qk, txt))], float)
-        per[k] = {"acc": am, "abst": ab, "opus_abst": oab, "opus_wrong": (1 - adj) * (1 - oab), "tmpl": tm, "wrong": (1 - am) * (1 - ab), "adj": adj, "adj_wrong": (1 - adj) * (1 - ab),
+        aq = np.array([TB.alias_match(t, [x for x in data[int(q)]["aliases"] if (" " + TB.norm(x) + " ") not in (" " + TB.norm(data[int(q)]["question"]) + " ")]) for q, t in zip(qk, txt)], float)
+        out["part2"].setdefault("unlabelled_answered", {})[k] = int(sum(1 for j, (q, t) in enumerate(zip(qk, txt)) if not ab[j] and (q, t) not in LT))
+        per[k] = {"acc": am, "acc_noq": aq, "denial": tm * (1 - adj), "abst": ab, "opus_abst": oab, "opus_wrong": (1 - adj) * (1 - oab), "tmpl": tm, "wrong": (1 - am) * (1 - ab), "adj": adj, "adj_wrong": (1 - adj) * (1 - ab),
                   "kl": float(np.mean([R_[q]["kl_tok"] for q in qk])), "words": float(np.mean([len(t.split()) for t in txt]))}
     out["part2"]["table"] = {k: {"kl": f3(d["kl"]), "alias_acc": f3(d["acc"].mean()), "adj_acc": f3(d["adj"].mean()), "abst": f3(d["abst"].mean()),
-                                 "tmpl": f3(d["tmpl"].mean()), "wrong": f3(d["wrong"].mean()), "adj_wrong": f3(d["adj_wrong"].mean()), "opus_abst": f3(d["opus_abst"].mean()), "opus_wrong": f3(d["opus_wrong"].mean()),
+                                 "tmpl": f3(d["tmpl"].mean()), "denial": f3(d["denial"].mean()), "alias_acc_noq": f3(d["acc_noq"].mean()), "wrong": f3(d["wrong"].mean()), "adj_wrong": f3(d["adj_wrong"].mean()), "opus_abst": f3(d["opus_abst"].mean()), "opus_wrong": f3(d["opus_wrong"].mean()),
                                  "precision_alias": f3(d["acc"].sum() / max(1, (1 - d["abst"]).sum())), "words": f3(d["words"])} for k, d in per.items()}
     if all(f"C_b{b}|mid" in per for b in (1, 2, 3)):
-        Cm = {m: np.mean([per[f"C_b{b}|mid"][m] for b in (1, 2, 3)], 0) for m in ("acc", "adj", "abst", "tmpl", "wrong", "adj_wrong", "opus_abst", "opus_wrong")}
+        Cm = {m: np.mean([per[f"C_b{b}|mid"][m] for b in (1, 2, 3)], 0) for m in ("acc", "acc_noq", "adj", "abst", "tmpl", "denial", "wrong", "adj_wrong", "opus_abst", "opus_wrong")}
         con = {}
-        for ref in ("IDEEA_s0|mid", "base|mid", "ITI|mid"):
+        for ref in ("IDEEA_s0|mid", "base|mid", "ITI|mid", "T_g|mid", "F1|mid", "F0|mid", "FThe|mid"):
             if ref in per:
                 con[f"Cbar-{ref}"] = {m: bci(Cm[m] - per[ref][m]) for m in Cm}
-        for X in ("T_md|mid", "T_g|mid", "F1|mid"):
+        for X in ("T_md|mid", "T_g|mid", "F1|mid", "F0|mid", "FThe|mid"):
             if X in per and "IDEEA_s0|mid" in per:
                 con[f"{X}-IDEEA"] = {m: bci(per[X][m] - per["IDEEA_s0|mid"][m]) for m in ("acc", "adj", "abst", "tmpl", "wrong")}
         con["Cbar_tmpl_rate"] = bci(Cm["tmpl"])
