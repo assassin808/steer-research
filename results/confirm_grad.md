@@ -151,3 +151,8 @@ Minor: KL/IDEEA-config wording, truncation, prereg deviations, fresh-question se
 ## Compute
 GPU (A100 3g.20gb MIG): dev 6883326 (1.29 h), 6883859 (0.44 h); test + official judges 6893698 (1.56 h), 6893702 (1.63 h); MC 6902001 (1.08 h).
 ≤ 2 concurrent jobs. CPU: direction fits (26 min, login node). Labelling: 75 Opus subagents (27 + 42 + 2 + 2 + 3 post hoc), ~16 000 labels.
+
+## Follow-up (2026-10-27): `results/template_ctrl.md`
+All three "Next" items were run. Template control: base + forced "There is no" opener matches C̄'s strict TI (TEMPLATE-SUFFICIENT);
+TriviaQA: C lowers accuracy vs IDEEA by .13–.17 and applies the template to 39% of factual questions (HURT); Qwen-7B labeller too lenient
+(UNINFORMATIVE). The PASS above stands as a TruthfulQA strict-TI result, but it is answer style, not more truthful steering.
