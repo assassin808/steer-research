@@ -36,7 +36,7 @@ Reply to the user in Chinese only.
 - Gemma strict TI (150 test q): base .193, IDEEA .300, ITI .170, ngref-fix .150 (FAIL vs IDEEA), eucref-fix .413 (unconfirmed),
   ng(judge-supervised) .510.
 - No candidate intensity coordinate passed PoC v3. Bridge experiment (one-factor ladder) running.
-- Trait-flow / OT geometry line CLOSED (flat at this resolution; boundary not trait-specific; KL-flow untestable in 256-d).
+- Trait-flow / OT geometry line CLOSED (NOT evidence of flatness: weekday calibration shows the toolkit has no power at TruthfulQA SNR ~.01, results/weekday_calib.md; boundary not trait-specific; KL-flow untestable in 256-d).
 - Gradient-at-IDEEA-heads "win" (+.14 strict TI) is a TruthfulQA STYLE ARTEFACT: forcing "There is no" with no steering matches it;
   it hurts TriviaQA (−.13 vs IDEEA). See results/template_ctrl.md.
 15. **Every TruthfulQA steering claim needs (i) a forced-opener control ("There is no" / "The") and (ii) an out-of-benchmark factual check
