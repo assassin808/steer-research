@@ -241,3 +241,21 @@ The running geometry agent was redirected accordingly; it must update its prereg
   neighbours adjacent in angular order; wind = winding). Reason: top-2-PC angular order of weekday centroids is perfect at most layers
   (y and z), while full-space turning is ~100° (circle + simplex/identity component + noise) — the prereg turning statistic mixes them.
 - TRIED · multi-threaded BLAS inside multiprocessing workers stalls on the login node (no output after 15 min); single-thread BLAS fixes it.
+- TRIED · 2026-10-27 · months extracted (acc .53), z-token position (A6), 3×3 tuning grid (k × PCA) on months (y and z), old O1–O3 on 6 runs,
+  reduced steering (A7: L8/12/16/20, straight vs spline). All CPU on the login node; old weekday-y stopped at L12 (Lustre I/O error).
+- FOUND · Toolkit gate FAIL (prereg), robust to tuning: TwoNN 3.6–8 (late month layers 2.5), distortion never > SNR-matched line null at the
+  last token (it is label-free nuisance shape), cyc_G ≤ 8/13, centroid turning 100–120° everywhere (≈ simplex 120°, not 7/12-gon 51/30°).
+- FOUND (POST HOC) · cyclic structure is real but a minority component: z-label first-circular-harmonic share .4–.7 (simplex .33/.18),
+  f1 power 8–200× shuffle at every layer; cyclic order adj = 1.0 at the z token. Representation ≈ categorical simplex + cycle.
+- FOUND · old statistics: O1 at α=100 ≈ chance; CV-α partial (4–12/24); O3 geo_ratio 1.000 (two-class); O2 target-MMD shape same as
+  TruthfulQA; only O2's held-out intermediate-class MMD (polyline < chord, 14/14, 24/24) sees the bend — needs intermediate classes.
+- FOUND · class SNR TruthfulQA top-24 heads .004–.018 ≈ weekday/month last-token z labels (.005–.05), where the prereg tools mostly fail
+  → the TruthfulQA "flat" verdict had little demonstrated power.
+- FOUND · steering UNINFORMATIVE: answer centroids nearly identical before L21, argmax never leaves Monday/January; no Tuesday bump to compare.
+- REVIEWED · 2026-10-27 · adversarial Opus review: 2 fatal framing, 5 major. Turning ≈108° is explained by the f1 share (high-pass), so it is not
+  "simplex" evidence → withdrawn. Order-relabel null added to S8 (p ≤ .007, 12–13/13 layers): cyclic order is confirmed, but the cycle only
+  partly closes (arc + simplex, ~35/18/48% circle/line/simplex). Toolkit has power at SNR ~1.8 (z token: turning/top-1/field 13/13,
+  distortion 9/13), none at ~0.01; the prereg gate label (month y) carried no signal. Old O1 is not calibrated by weekdays (binary pairs are
+  correctly flat); O2 intermediate-MMD needs a relabel null. SNR comparison with TruthfulQA is fair in dimension but n differs ~20×.
+- DECIDED · TruthfulQA "flat" = "no evidence either way", not positive flatness. NEXT: planted-curvature power curve inside real TruthfulQA
+  residuals at matched SNR and n; z-token steering with z-centroid deltas once GPUs return (after 2026-11-03).
