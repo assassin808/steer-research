@@ -151,6 +151,8 @@ def main():
         C = int(len(names))
         nl = H.shape[1] - 1
         Ls = list(range(4, min(nl - 2, 22) + 1, 2))
+        if os.environ.get("STEER_LAYERS"):  # CPU budget (A7): subset of the preregistered layer grid
+            Ls = [int(x) for x in os.environ["STEER_LAYERS"].split(",")]
         steer_rows = [i for i, r in enumerate(rows) if r["t"] == 5 and r["y"] == 0]
         stexts = [texts[i] for i in steer_rows]
         res = {"layers": Ls, "t": TGRID.tolist(), "n_prompts": len(stexts), "paths": {}}
@@ -167,6 +169,8 @@ def main():
                     "spline": cs(i0 + TGRID * span),
                 }
                 for pn, G in paths.items():
+                    if pn not in os.environ.get("STEER_PATHS", "straight,polyline,spline").split(","):
+                        continue
                     D = torch.tensor(G - cent[i0], dtype=torch.float32)
                     Pc_all, oth, tic = [], [], []
                     for txt in stexts:

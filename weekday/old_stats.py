@@ -76,7 +76,7 @@ def pair(args):
         return cf[seq[a]] + (u - a) * (cf[seq[a + 1]] - cf[seq[a]])
     pool = np.concatenate([Xs, Zs[fit & (y == j)]])
     D = G.eucl(pool); bw = float(np.median(D[np.triu_indices(len(pool), 1)]))
-    tgt = Zs[fit & (y == j)]; mids = [Zs[fit & (y == m)] for m in seq[1:-1]]
+    tgt = Zs[fit & (y == j)]; mids = [Zs[ho & (y == m)] for m in seq[1:-1]]  # held-out intermediates (polyline uses fit centroids)
     nn_all = NearestNeighbors(n_neighbors=10).fit(Zs[fit]); band = np.quantile(nn_all.kneighbors(Zs[ho])[0][:, -1], .95)
     rec = {}
     for pn in ["straight", "polyline"]:
@@ -101,12 +101,13 @@ def pair(args):
     geo = DGall[ni][:, nj][np.arange(len(ni)), ot["jstar"]]
     euc = np.linalg.norm(Zf[yf == 0] - Zf[yf == 1][ot["jstar"]], axis=1)
     out["geo_all"] = float(np.median(geo[np.isfinite(geo)] / euc[np.isfinite(geo)]))
-    fs = flat_stats(Zf[yf == 0], ot["d"], dmu)
+    kf = min(50, int((yf == 0).sum()) - 1)  # ot_geometry used 50 NEG neighbours; months have 44 fit rows per class
+    fs = flat_stats(Zf[yf == 0], ot["d"], dmu, k=kf)
     out["ot_r2s"] = fs["r2s"]
     rs = []
     for r in range(reps):
         a, b = null_sample("rshift", Zf[yf == 0], Zf[yf == 1], rng)
-        o2 = sinkhorn(a, b, 0.01); rs.append(flat_stats(a, o2["d"], b.mean(0) - a.mean(0))["r2s"])
+        o2 = sinkhorn(a, b, 0.01); rs.append(flat_stats(a, o2["d"], b.mean(0) - a.mean(0), k=kf)["r2s"])
     out["ot_r2s_rshift"] = rs
     print(f"pair {i}->{j} turn1 {out['turn1']:.1f} cv(a={acv}) {out['turn1_cv']:.1f} (G {np.max(nl['gshared'], 0)} R {np.max(nl['rshift'], 0)}) "
           f"d* {rec['straight']['dstar']} minMMDmid str {rec['straight']['min_mmd_mid']} poly {rec['polyline']['min_mmd_mid']} "

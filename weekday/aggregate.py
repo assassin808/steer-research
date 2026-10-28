@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 R = os.path.expanduser("~/scratch/weekday"); OUT = os.path.expanduser("~/steer_math/results")
 MID = range(6, 19)
+LATE = range(19, 26)  # POST HOC window (structure strongest there)
 RULES = {  # stat: (null, direction, extra threshold)
     "id": [("flatG", "lt"), ("blob", "lt")],
     "distortion": [("flatG", "gt"), ("line", "gt"), ("line2", "gt"), ("blob", "gt")],
@@ -45,14 +46,17 @@ def geom_summary(fn):
                 if nv is not None:
                     r[f"{s}|{nm}_q"] = [float(np.nanquantile(np.array(nv, float), q)) for q in (.025, .5, .975)]
         rows.append(r)
-    mid = [r for r in rows if r["layer"] in MID]
-    det = {}
-    for s, rules in RULES.items():
-        for nm, _ in rules:
-            v = [r[f"{s}|{nm}"] for r in mid if r[f"{s}|{nm}"] is not None]
-            det[f"{s}|{nm}"] = f"{sum(v)}/{len(v)}"
-        det[f"{s}|data_mid_median"] = float(np.median([r[s] for r in mid]))
-    return dict(args=g["args"], n=g["n"], rows=rows, mid_detect=det)
+    out = dict(args=g["args"], n=g["n"], rows=rows)
+    for wn, W in [("mid", MID), ("late", LATE)]:
+        mid = [r for r in rows if r["layer"] in W]
+        det = {}
+        for s, rules in RULES.items():
+            for nm, _ in rules:
+                v = [r[f"{s}|{nm}"] for r in mid if r[f"{s}|{nm}"] is not None]
+                det[f"{s}|{nm}"] = f"{sum(v)}/{len(v)}"
+            det[f"{s}|data_median"] = float(np.nanmedian([r[s] for r in mid]))
+        out[f"{wn}_detect"] = det
+    return out
 
 
 def plot_geom(sm, tag):
@@ -122,4 +126,4 @@ if __name__ == "__main__":
     json.dump(S, open(f"{OUT}/weekday_calib_summary.json", "w"), indent=0)
     for k, v in S.items():
         if k.startswith("geom_"):
-            print(k, json.dumps(v["mid_detect"]))
+            print(k, json.dumps(v["mid_detect"]), json.dumps(v["late_detect"]))
