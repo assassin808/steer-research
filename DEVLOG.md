@@ -310,3 +310,4 @@ The running geometry agent was redirected accordingly; it must update its prereg
 - DECIDED · TruthfulQA "flat" → "no power" (binary label cannot identify curvature; O1 blind to IDEEA-like 90° heterogeneity).
   Persona study: ord1 gate + quad⊥ vs cell-permutation line null at p≤.02–.025; ≈70 questions × 5 levels × 3 samples; read downstream
   of the steering layer. results/power_curve.md v2.
+- FOUND · B grid final (18 sims, tqa n=1200): O1 clust90 power .11/.00 (SNR .01/.1; noise at 0.001° scale), clust180 1.0; 1−OT R²_s50 clust90 .33/.94.

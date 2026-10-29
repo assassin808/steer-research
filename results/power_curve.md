@@ -18,7 +18,7 @@ Status: **v2, revised after the adversarial Opus review** (review table at the e
      latent cluster, the flow inside each cluster is still straight. At the TQA cell (n = 1200 per class), O1 turning is ≈ 0.001° for both the
      straight plant and the 90° cluster plant, at SNR .01 and .1. O1 reacts only to 180° (opposite-direction) heterogeneity: about 20°, power 1.
    - Other statistics do react to heterogeneity, but neither is a calibrated test on real TQA:
-     - 1 − OT R²_s50: clust90 power .42 at SNR .01 and .92 at SNR .1 (oracle, random plane, 12 simulations).
+     - 1 − OT R²_s50: clust90 power .33 at SNR .01 and .94 at SNR .1 (oracle, random plane, 18 simulations).
      - local-field coherence (fincoh): see §5.
      - On real TQA, fincoh rejects the R-shift null by about 18 SD. The probable cause is question structure, so a within-question null is needed first.
 2. **For graded designs (L ≥ 5), use ord1 as the order gate and quad⊥ as the curvature test.**
@@ -151,12 +151,12 @@ Planted arc 309°, L = 7:
 
 ## 5. Binary designs (L = 2) and TruthfulQA
 - **Arcs at L = 2: unidentifiable.** frot/fincoh arc90 power .02–.12 (= FPR).
-- **O1 at the TQA cell** (n = 1200, 12/18 simulations, random plane):
-  - arc0 0.0007°;
-  - clust90 0.0008° at SNR .01 and 0.0003° at SNR .1 (oracle power .25 / .00; the .25 is noise at the 0.001° scale);
+- **O1 at the TQA cell** (n = 1200, 18 simulations, random plane):
+  - arc0 0.0006°;
+  - clust90 0.0007° at SNR .01 and 0.0003° at SNR .1 (oracle power .11 / .00; the .11 is noise at the 0.001° scale);
   - clust180 16–25° (power 1.0).
   - In real TQA the R-shift null itself turns 14° (non-Gaussian shape along Δμ), which would swamp any clust90 effect. **O1 has no power against IDEEA-like 90° heterogeneity.**
-- **1 − OT R²_s50**: clust90 power .42 (SNR .01), .92 (SNR .1); clust180 .92 / 1.0. Oracle, random plane.
+- **1 − OT R²_s50**: clust90 power .33 (SNR .01), .94 (SNR .1); clust180 .94 / 1.0. Oracle, random plane, 18 simulations.
 - **fincoh**:
   - Oracle clust90 power at SNR .01, random plane: .38 / .98 / 1.0 for n = 20 / 100 / 300.
   - With a Δμ-aligned or top-PC plane (reviewer), power at n = 300 falls to .60 / .50 and is 1.0 only at n = 1200.
@@ -187,7 +187,7 @@ Planted arc 309°, L = 7:
 - Backgrounds are resampled with replacement when n·L exceeds the rows. That is a bootstrap world, optimistic for kNN statistics.
 - The persona SNR comes from prompted endpoints at L14. A steered or prompted ladder may not reach it, hence the ×0.5 column.
 - The cell-effect size (κ ≈ .55) is the reviewer's estimate from pos/neg Δ_q spread. Measure it in the pilot.
-- The B grid is tiny (12–18 simulations, random plane only).
+- The B grid is tiny (18 simulations, random plane only).
 
 ## Adversarial review (Opus) — objections and handling
 | # | objection | severity | handling |
