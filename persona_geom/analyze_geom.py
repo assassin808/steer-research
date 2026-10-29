@@ -108,7 +108,8 @@ def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True, power=False):
     r["kappa"] = G.cell_kappa(Xl, mL, t, C=len(cells()))
     if power:   # in-sample power for FLAT (powered), A1: planted arc60, primary test at the conservative Holm threshold .02/6
         lc = G.ladder_cells(Xl, mL, t)
-        r["planted_arc60"] = {pl: G.planted_power(lc["D"], lc, rng, .02 / len(TRAITS), 60.0, pl, nsim=NSIM_POWER) for pl in ("noise", "random")}
+        r["planted_arc60"] = {pl: G.planted_power(lc["D"], lc, rng, .02 / len(TRAITS), 60.0, pl, nsim=ns)
+                              for pl, ns in (("noise", NSIM_POWER), ("random", max(NSIM_POWER // 3, 2)))}   # random plane: descriptive
     r["input_dep"] = G.input_dependence(Xl, mL, t, rng=rng, nboot=500)
     Dp, Dn = labels(mL, t); r["n_pos"], r["n_neg"] = int(Dp.sum()), int(Dn.sum())
     if Dp.sum() >= 20 and Dn.sum() >= 20:

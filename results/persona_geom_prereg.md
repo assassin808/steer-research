@@ -131,7 +131,8 @@ Split halves = all balanced bipartitions of sample indices within every (questio
     [A1] No separate θ-effect value threshold (the power curve gives none that is calibrated); quadperp's value is reported;
   - **FLAT (powered)** if gate passes, not CURVED, and the **in-sample planted-arc power** has a one-sided 90% Clopper–Pearson
     lower bound ≥ .8: a 60° arc keeping the ladder's split-half positions along its direction, planted in the plane of that
-    direction and the top residual-cell PC (the hardest plane; a random plane is also reported), on the trait's own residual
+    direction and the top residual-cell PC (the hardest plane; a random plane within the span of the data, 33 datasets, is
+    reported descriptively), on the trait's own residual
     cells (cell-permuted), tested with the primary test at the conservative Holm threshold .02/6 (`geom.planted_power`, 100
     datasets × 599 reps per null). FLAT (powered) means "no bend of ≥ 60° over the ladder is present at this power"; 60° is a
     convention;

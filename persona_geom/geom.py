@@ -277,6 +277,9 @@ def planted_power(D, lc, rng, alpha, deg=60.0, plane="noise", nsim=100, reps=Non
     threshold, conservatively .02/m); reps >= 1/alpha. Reports a one-sided 90% Clopper-Pearson lower bound."""
     from scipy.stats import beta
     reps = reps or int(np.ceil(1 / alpha)) * 2 - 1; hits = 0
+    n, d = int(np.prod(D.shape[:3])), D.shape[-1]
+    if n < d:   # exact speed-up: every statistic is rotation invariant and all centroids / nulls / planted arcs live in span(D)
+        Qb = np.linalg.qr(D.reshape(n, d).T)[0]; D = D @ Qb       # (the 'random' plane is then random within span(D))
     for _ in range(nsim):
         hits += line_test(arc_D(D, lc, rng, deg, plane, Qboot), lc, rng, reps, keys=(stat,))[f"p_{stat}"] <= alpha + 1e-12
     lo = float(beta.ppf(0.10, hits, nsim - hits + 1)) if hits > 0 else 0.0
