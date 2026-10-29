@@ -1,0 +1,146 @@
+{
+ "syc L5 q arc60 SNR_L=0.0180": {
+  "quad": "136",
+  "offline": "242",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L5 q arc90 SNR_L=0.0180": {
+  "quad": "64",
+  "offline": "121",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L5 q bend90 SNR_L=0.0180": {
+  "quad": "\u226420",
+  "offline": "24",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L5 iid arc60 SNR_L=0.0180": {
+  "quad": "528",
+  "offline": "671",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L5 iid arc90 SNR_L=0.0180": {
+  "quad": "176",
+  "offline": "291",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L5 iid bend90 SNR_L=0.0180": {
+  "quad": "36",
+  "offline": "56",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L7 q arc60 SNR_L=0.0160": {
+  "quad": "165",
+  "offline": "240",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L7 q arc90 SNR_L=0.0160": {
+  "quad": "56",
+  "offline": "139",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L7 q bend90 SNR_L=0.0160": {
+  "quad": "\u226420",
+  "offline": "21",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L7 iid arc60 SNR_L=0.0160": {
+  "quad": "500",
+  "offline": "645",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L7 iid arc90 SNR_L=0.0160": {
+  "quad": "172",
+  "offline": "275",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "syc L7 iid bend90 SNR_L=0.0160": {
+  "quad": "32",
+  "offline": "56",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L5 q arc60 SNR_L=0.0226": {
+  "quad": "88",
+  "offline": "131",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L5 q arc90 SNR_L=0.0226": {
+  "quad": "38",
+  "offline": "49",
+  "turn": "692",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L5 q bend90 SNR_L=0.0226": {
+  "quad": "\u226420",
+  "offline": "\u226420",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L5 iid arc60 SNR_L=0.0226": {
+  "quad": "359",
+  "offline": "779",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L5 iid arc90 SNR_L=0.0226": {
+  "quad": "176",
+  "offline": "289",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L5 iid bend90 SNR_L=0.0226": {
+  "quad": "42",
+  "offline": "46",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L7 q arc60 SNR_L=0.0201": {
+  "quad": "82",
+  "offline": "150",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L7 q arc90 SNR_L=0.0201": {
+  "quad": "36",
+  "offline": "67",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L7 q bend90 SNR_L=0.0201": {
+  "quad": "\u226420",
+  "offline": "\u226420",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L7 iid arc60 SNR_L=0.0201": {
+  "quad": "377",
+  "offline": "812",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L7 iid arc90 SNR_L=0.0201": {
+  "quad": "158",
+  "offline": "334",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ },
+ "opt L7 iid bend90 SNR_L=0.0201": {
+  "quad": "36",
+  "offline": "50",
+  "turn": ">1000",
+  "ord1(arc0)": "\u226420"
+ }
+}

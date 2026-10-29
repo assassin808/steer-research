@@ -259,3 +259,54 @@ The running geometry agent was redirected accordingly; it must update its prereg
   correctly flat); O2 intermediate-MMD needs a relabel null. SNR comparison with TruthfulQA is fair in dimension but n differs ~20×.
 - DECIDED · TruthfulQA "flat" = "no evidence either way", not positive flatness. NEXT: planted-curvature power curve inside real TruthfulQA
   residuals at matched SNR and n; z-token steering with z-centroid deltas once GPUs return (after 2026-11-03).
+
+## 2026-10-28/29 — persona-trait manifold geometry, done as Zheng's proposal specifies (results/persona_geom_prereg.md)
+- DECIDED · follow the proposal this time: 6 traits (evil / sycophantic / hallucinating from persona_vectors + manipulative /
+  flattering / deceptive generated with persona_vectors' own generator prompt by Claude Opus 5.5), graded intensities, per-question
+  content removal, judged D+/D−, PCA-64 / kNN / Isomap / local direction field / IDEEA-cluster connectivity, geodesic steering vs
+  linear vs IDEEA vs prompting at MATCHED TARGET GAIN. Model Gemma-2-2B-it (proposal: Llama-3-8B; compute rule). Code persona_geom/.
+- TRIED · GPUs and all compute nodes are in POWEROUT20261027 until 11-03; login node was at load ~1100 on 10-28 (imports took minutes,
+  session died). Everything built and tested on the login node CPU.
+- FOUND (synthetic, before data) · a kNN-graph geodesic through raw noisy rows has straightness .60 on a planted STRAIGHT ladder;
+  GCV spline .77; local-mean denoising + least-squares cubic .90–.98. Path curvature has a noise floor → geo_null control arm.
+- REVIEWED · adversarial Opus design review of v1 (2 fatal, 9 major). Fatal: (1) keeping full-vocab log-probs of every batch for KL
+  would OOM g4 → batched KL; (2) level 0 had no instruction while ±1/±2 did, so the "instruction present" offset loads on the quadratic
+  contrast and makes every ladder look curved by construction. Synthetic check confirms (bare-anchored ladder offline .040 on a
+  straight trait). Fix: one uniform frame for all instructed cells + placebo instruction at every intensity word, ladders are
+  placebo-referenced contrasts (difference-in-differences; offline .000 on the same data). Majors fixed: paraphrase fixed per question,
+  bootstrap copies kept out of both halves, completeness instead of AMI(qid), res-control power reported, placebo-anchored
+  separation + non-neighbour baseline, geo_null arm + 3-part attribution rule, IDEEA on per-token states + ideea1 (K=1) arm,
+  length control, blind steering pack, evil judge without "manipulate, deceive".
+- FOUND (synthetic) · a line null that rebuilt trait rows around the POOLED placebo mean was biased low (p95 −.01 vs observed .000 →
+  p = 0 on a straight line, i.e. it would have called flat ladders curved). Pairing each trait row with its own (question, sample)
+  placebo row + wild-bootstrap sign flips fixes it (p = .53 on the line, p < .03 on a 90° arc). test_geom.py: all pass.
+- FOUND · IDEEA hook: logits during HF generate (last-position rule) equal one teacher-forced pass with the rule at every response
+  position to 1.5e-5 (check_equiv.py); same for the all-position add hook. KL and per-token IDEEA states rely on this.
+- DECIDED · prereg v1.1 committed with TBD-PC fields (sizes, primary curvature statistic, θ-effect, power table) to be filled from
+  results/power_curve.md as a dated amendment; sbatch/submit.sh refuses while "TBD" remains. GPU chain g1→g2→g3→g4 (+ CPU c1, c2),
+  ≈ 17 GPU-h at default sizes.
+
+## 2026-10-28/29 — planted-curvature power curves (results/power_curve_prereg.md, commit bc8463b)
+- PREREGISTERED · bc8463b before any simulation: real backgrounds (TQA heads L13H5/L21H6/L15H2 z-space, weekday last/z token L12,
+  PoC v3.1 syc/opt w23 L14; real class means removed), planted L-level curves (arc θ, sat line, bend, IDEEA-like cluster-dependent
+  directions) at SNR 1e-3…3, n 20…1000, iid vs questions×levels; statistics turn/offline/quad⊥(new)/ord1/f1c, frot/fincoh/dist, O1/OT.
+- TRIED · Narval POWEROUT20261027 covers ALL compute nodes (CPU too) → login node only; ~4–5 cores per user cap; `ps`/`pkill` hang on
+  narval-login when /proc has D-state processes (use pid files); one session died mid-run (A and P grids survived under nohup).
+- FOUND · Gram trick + common random numbers: centroid stats for all shapes×SNR from one background draw (280 cells × 400 sims).
+- FOUND · quad⊥ (quadratic-in-level centroid component ⊥ the line, split-half) is the most powerful curvature test: 80% at n·SNR≈2.2
+  (L7 arc90 TQA), offline ≈6.6, kit turning ≈200 (×100 worse; blind to single bends). n·SNR≈const for n≥50 (P3 PASS).
+  ord1 (order) ≈10× cheaper than any curvature test. Weekday consistency (P2) PASS: turn 0 at last-token SNR .014, 1 at z-token 1.86.
+- FOUND · balanced questions×levels design cancels question means exactly → persona backgrounds ≈3× cheaper than iid.
+- FOUND · practical line null (projected positions + permuted residuals) absorbs sat and clust; FPR ≈ .04–.10 (mildly anticonservative
+  for offline/quad); amended perp-null (permute only the orthogonal component) under test.
+- FOUND · binary (L=2): curved ladders unidentifiable by construction; O1 (α=100) ≈0° for straight AND 90° cluster heterogeneity at
+  TQA n/SNR → no power; only 180° heterogeneity gives ~20°. fincoh / OT do see clust90.
+- REVIEWED · 2026-10-29 · adversarial Opus review: no code bug (noise-free and q-cancellation checks pass); 9 major. P1 FAILS at n=50 for
+  offline/quad⊥ (FPR .07–.10) → claims at p≤.02; perp-null TRIED, NOT ADOPTED; P4 FAILS (cluster-fraction jitter); O1 blind to clust by
+  construction; random plane easier than Δμ plane for fincoh; fincoh on real TQA rejects R-shift (question structure?).
+- FOUND (POST HOC, designcheck.py) · question×level cell effect (κ≈.55) breaks the within-question row-permutation null (FPR .15–.92);
+  cell-permutation null restores .03–.13. Persona design: 35q×5L×5 → quad⊥ arc60 power .77–1.0 (×1 SNR), .30–.68 (×0.5);
+  70q×5L×3 → .98 / .50–.73. Cell effects average over questions, not samples.
+- DECIDED · TruthfulQA "flat" → "no power" (binary label cannot identify curvature; O1 blind to IDEEA-like 90° heterogeneity).
+  Persona study: ord1 gate + quad⊥ vs cell-permutation line null at p≤.02–.025; ≈70 questions × 5 levels × 3 samples; read downstream
+  of the steering layer. results/power_curve.md v2.

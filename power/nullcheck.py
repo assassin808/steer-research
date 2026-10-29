@@ -10,6 +10,7 @@ from multiprocessing import Pool
 import core as C
 
 OUT = f"{C.R}/nullcheck"
+NULLF = [None]   # set in main: line_null (prereg) or perp_null (amendment A1)
 SH = ["arc0", "sat", "arc90", "clust90"]
 SN = [0.03, 0.3, 3.0]
 
@@ -54,7 +55,7 @@ def run(args):
                 X = Xr + C.amplitude(sh, L, s, bg.W) * (U @ P.T)
                 if not do_point:
                     obs = cstats(X, L, n, qid, rep, rng)
-                    nul = np.array([cstats(line_null(X, qid, rng), L, n, qid, rep, rng) for _ in range(reps)])
+                    nul = np.array([cstats(NULLF[0](X, qid, rng), L, n, qid, rep, rng) for _ in range(reps)])
                     pv[it, j, k] = (1 + np.sum(np.nan_to_num(nul, nan=-np.inf) >= obs[None], 0)) / (1 + reps)
                     pv[it, j, k][~np.isfinite(obs)] = 1.0
                 else:
@@ -68,17 +69,25 @@ def run(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--procs", type=int, default=12); a = ap.parse_args()
+    ap = argparse.ArgumentParser(); ap.add_argument("--procs", type=int, default=12)
+    ap.add_argument("--null", default="line", choices=["line", "perp"]); ap.add_argument("--ns", default="50,300"); a = ap.parse_args()
+    global OUT
+    if a.null == "perp": OUT = f"{C.R}/nullcheck_perp"
     os.makedirs(OUT, exist_ok=True)
     jobs = []
     for b, mode in [("tqa13_5", "iid"), ("syc", "q")]:
-        for n in [50, 300]:
+        for n in map(int, a.ns.split(",")):
             for ch in range(4):   # 4 chunks x 25 sims = 100
                 jobs.append((b, 7, n, mode + f"c{ch}", 25, 99, hash((b, n, ch)) % 2 ** 31, False))
-    jobs.append(("tqa13_5", 7, 50, "iid", 40, 39, 7, True))
+    if a.null == "line": jobs.append(("tqa13_5", 7, 50, "iid", 40, 39, 7, True))
     jobs = [(j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7]) for j in jobs]
-    with Pool(a.procs) as p:
+    with Pool(a.procs, initializer=_init, initargs=(a.null, OUT)) as p:
         for _ in p.imap_unordered(run2, jobs): pass
+
+
+def _init(nl, out):
+    global OUT
+    NULLF[0] = line_null if nl == "line" else perp_null; OUT = out
 
 
 def run2(j):
@@ -93,6 +102,26 @@ def run2(j):
         return run(a)
     finally:
         OUT = old
+
+
+def perp_null(X, qid, rng):
+    """TRIED, NOT ADOPTED (post hoc; line null FPR was .07-.10 at n = 50; this perp null does not fix it, see power_curve.md):
+    keep every row's component along u (top PC of the observed centred centroids) exactly, permute only the orthogonal
+    component x_perp across levels (within question in q mode). The Gram splits exactly into M_par + M_perp, so the along-line
+    spacing and its split-half noise are kept; under a straight line, x_perp is exchangeable across levels."""
+    L, n, r = X.shape
+    c = X.mean(1); m = c.mean(0)
+    u = np.linalg.svd(c - m, full_matrices=False)[2][0]
+    Xf = X.reshape(L * n, r) - m
+    par = np.outer(Xf @ u, u); perp = Xf - par
+    q = qid.reshape(-1)
+    if q[0] < 0:
+        perm = rng.permutation(L * n)
+    else:
+        perm = np.arange(L * n)
+        for qq in np.unique(q):
+            idx = np.where(q == qq)[0]; perm[idx] = rng.permutation(idx)
+    return (m + par + perp[perm]).reshape(L, n, r)
 
 
 if __name__ == "__main__":
