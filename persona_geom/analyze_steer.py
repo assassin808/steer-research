@@ -1,14 +1,16 @@
 """H5 steering comparison at MATCHED TARGET-TRAIT GAIN (prereg section 6.4). CPU.
 usage: RUN=main python analyze_steer.py  -> <OUT>/steer_summary.json
-Arms: prompt (graded system prompt levels 0/+1/+2 from gen_main, same questions), pv, chord, geo, ideea.
+Arms: prompt (bare neutral + slight/moderate/strong instruction cells from gen_main, same questions), pv, chord, geo,
+geo_null (control: same path construction on line-null data), ideea1 (K = 1, last-position rule), ideea (K = 4).
 Per arm and trait: curve over strength of target score T, leakage (other traits' score increase), coherence, per-token KL.
-Matched gains G_j = j/4 * G_common, j = 1..3, G_common = min(prompt +2 gain, every arm's max coherent gain).
+Matched gains G_j = j/4 * G_common, j = 1..3, G_common = min(prompt strong gain, every arm's max coherent gain).
+Bootstrap CIs are conditional on both arms reaching G_j; the share of replicates dropped is reported (n_boot_used).
 Values at G_j by linear interpolation at the first crossing of the gain curve. Bootstrap over questions (paired across arms).
 """
 import numpy as np
 from common import OUT, TRAITS, NEIGHBOUR_PAIRS, jload, jdump, log
 
-ARMS = ["pv", "chord", "geo", "ideea"]
+ARMS = ["pv", "chord", "geo", "geo_null", "ideea1", "ideea"]
 NB = {t: sorted({b for a, b in NEIGHBOUR_PAIRS if a == t} | {a for a, b in NEIGHBOUR_PAIRS if b == t}) for t in TRAITS}
 COH_DROP = 1.0
 
@@ -35,8 +37,9 @@ def _agg(rows_list, t):
 
 def prompt_curve(G, t, qids):
     rows_list = [[r for r in G if r["trait"] == "none" and r["qid"] in qids]] + \
-                [[r for r in G if r["trait"] == t and r["level"] == l and r["qid"] in qids] for l in (1, 2)]
-    return dict(x=[0, 1, 2], **_agg(rows_list, t))
+                [[r for r in G if r["trait"] == t and r["level"] == l and r["qid"] in qids] for l in (1, 2, 3)]
+    o = dict(x=[0, 1, 2, 3], **_agg(rows_list, t)); o["kl"] = [np.nan] * 4      # prompting has no KL to the unsteered model here
+    return o
 
 
 def leak(c, t, i):
@@ -76,8 +79,9 @@ def max_jump(c):
 
 def summarise(R, Gm, t, qids):
     C = curves(R, t, qids); C["prompt"] = prompt_curve(Gm, t, qids)
-    Gc = min([C["prompt"]["T"][2] - C["prompt"]["T"][0]] + [max_coherent_gain(C[a]) for a in ARMS])
-    out = dict(G_common=float(Gc), G_prompt=float(C["prompt"]["T"][2] - C["prompt"]["T"][0]),
+    Gp = C["prompt"]["T"][3] - C["prompt"]["T"][0]
+    Gc = min([Gp] + [max_coherent_gain(C[a]) for a in ARMS])
+    out = dict(G_common=float(Gc), G_prompt=float(Gp),
                max_gain={a: float(max_coherent_gain(C[a])) for a in ARMS}, jump={a: max_jump(C[a]) for a in ARMS}, matched={})
     for j in (1, 2, 3):
         G = j / 4 * Gc
@@ -108,12 +112,16 @@ if __name__ == "__main__":
             boots.append(s)
         diffs = {}
         for j in ("1", "2", "3"):
-            for a, b in (("geo", "chord"), ("geo", "pv"), ("geo", "ideea"), ("chord", "pv"), ("pv", "prompt"), ("geo", "prompt"), ("ideea", "prompt")):
-                for k in ("mean", "nbr", "coh", "kl"):
+            for a, b in (("geo", "chord"), ("geo_null", "chord"), ("geo", "geo_null"), ("geo", "pv"), ("geo", "ideea"), ("chord", "pv"),
+                         ("ideea", "ideea1"), ("ideea1", "pv"), ("pv", "prompt"), ("geo", "prompt"), ("ideea", "prompt"), ("chord", "prompt")):
+                for k in ("mean", "nbr", "max", "coh") + (() if "prompt" in (a, b) else ("kl",)):
                     v = [s["matched"][j][a][k] - s["matched"][j][b][k] for s in boots
                          if s["matched"] and s["matched"][j] and s["matched"][j][a] and s["matched"][j][b]]
                     if len(v) > 50:
-                        diffs[f"{a}-{b}|G{j}|{k}"] = dict(mean=float(np.mean(v)), ci=[float(x) for x in np.percentile(v, [2.5, 97.5])], nboot=len(v))
+                        diffs[f"{a}-{b}|G{j}|{k}"] = dict(mean=float(np.mean(v)), ci=[float(x) for x in np.percentile(v, [2.5, 97.5])], n_boot_used=len(v))
+        for a in ("geo", "geo_null"):
+            v = [s["jump"][a] - s["jump"]["chord"] for s in boots if np.isfinite(s["jump"][a]) and np.isfinite(s["jump"]["chord"])]
+            if v: diffs[f"jump {a}-chord"] = dict(mean=float(np.mean(v)), ci=[float(x) for x in np.percentile(v, [2.5, 97.5])], n_boot_used=len(v))
         jd = [s["jump"]["geo"] - s["jump"]["chord"] for s in boots if np.isfinite(s["jump"]["geo"]) and np.isfinite(s["jump"]["chord"])]
         if jd: diffs["jump geo-chord"] = dict(mean=float(np.mean(jd)), ci=[float(x) for x in np.percentile(jd, [2.5, 97.5])])
         res[t] = dict(point=point, diffs=diffs, curves=C)

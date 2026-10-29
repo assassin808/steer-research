@@ -7,7 +7,7 @@ Steering modes at one layer L (residual stream = output of decoder layer L, i.e.
   forward call, x <- x + alpha * (nearest pos centroid - nearest neg centroid), selected from x itself (float64).
   In a teacher-forced pass the same rule is applied at every position >= last prompt token. This is exactly equivalent:
   the un-edited layer-L output at position t depends only on layers <= L at positions <= t, and the edits enter only
-  layers > L, so the selected direction is the same as during generation. (Checked numerically in smoke_test.py.)
+  layers > L, so the selected direction is the same as during generation. (Checked numerically by check_equiv.py.)
 """
 import os, numpy as np, torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -145,6 +145,37 @@ class LM:
                     lps[i] = lp[j, c - 1:c - 1 + T]
             del o
         return acts, (lps if want_lp else None)
+
+
+@torch.no_grad()
+def kl_tf(lm, ctxs, resps, steer, bs=None):
+    """per-row mean per-token KL(p_steered || p_unsteered) over response tokens, computed batch by batch so only scalars are kept
+    (review finding 1: keeping [n, T, V] log-probs of every batch exhausts memory). steer(ch) sets the hooks for the steered pass."""
+    bs = bs or (8 if DEV == "cuda" else 4); out = []
+    for b in range(0, len(ctxs), bs):
+        ch = list(range(b, min(len(ctxs), b + bs)))
+        _, lpS = lm.tf([ctxs[i] for i in ch], [resps[i] for i in ch], want_lp=True, steer=(lambda c, ch=ch: steer([ch[j] for j in c])))
+        _, lp0 = lm.tf([ctxs[i] for i in ch], [resps[i] for i in ch], want_lp=True)
+        out += kl_per_token(lpS, lp0, [resps[i] for i in ch]); del lpS, lp0
+    return out
+
+
+@torch.no_grad()
+def token_states(lm, ctxs, resps, L, max_tok=32, seed=0):
+    """RAW residual (hidden_states[L]) at up to max_tok randomly chosen response tokens per row (stop token excluded)."""
+    rng = np.random.default_rng(seed); out = []
+    for b in range(0, len(ctxs), 4):
+        ch = list(range(b, min(len(ctxs), b + 4)))
+        seqs = [ctxs[i] + resps[i] for i in ch]; S = max(len(x) for x in seqs)
+        ids = torch.full((len(ch), S), lm.pad, dtype=torch.long); mask = torch.zeros_like(ids)
+        for j, x in enumerate(seqs): ids[j, :len(x)] = torch.tensor(x); mask[j, :len(x)] = 1
+        h = lm.model(input_ids=ids.to(DEV), attention_mask=mask.to(DEV), output_hidden_states=True).hidden_states[L]
+        for j, i in enumerate(ch):
+            n = len([t for t in resps[i] if t not in lm.stop]); c = len(ctxs[i])
+            if n == 0: continue
+            pos = rng.choice(n, min(n, max_tok), replace=False) + c
+            out.append(h[j, pos].double().cpu().numpy())
+    return np.concatenate(out)
 
 
 def _npn(x, pc, nc):

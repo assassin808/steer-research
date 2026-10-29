@@ -1,19 +1,22 @@
-"""Geometry analysis H1-H4 + trivial controls (prereg sections 4-5). CPU.
-usage: RUN=main python analyze_geom.py [--reps 99] [--layers all|primary]
+"""Geometry analysis H0-H4 + trivial controls (prereg sections 3-5). CPU.
+usage: RUN=main python analyze_geom.py [--reps 99] [--nfield 20] [--split train|test] [--layers primary|all] [--reps_list neu,txt,res,len,sys]
 Representations: neu (acts_neu, PRIMARY), sys (acts_sys), txt (sentence-encoder embedding of the response text; surface control 1),
-res (acts_neu minus a cross-fitted ridge prediction from the text embedding; surface control 2).
+res (acts_neu minus a cross-fitted ridge prediction from the text embedding; surface control 2), len (acts_neu with log ntok
+regressed out of every coordinate; length control C4).
 Primary layer per trait = l*_t from <OUT>/layers.json (steering sweep); if absent, every layer in LPROFILE is 'primary'.
-Output: <OUT>/geom_<rep>.json and a judge-profile table <OUT>/prompt_profile.json.
+Output: <OUT>/geom_<rep>_<split>.json, <OUT>/prompt_profile.json (C1 + H0 + wording rule), <OUT>/length.json (C4).
 """
-import os, sys, json, argparse, numpy as np
-from common import OUT, TRAITS, NEIGHBOUR_PAIRS, LEVELS, jload, jdump, log
+import os, argparse, numpy as np
+from scipy.stats import spearmanr
+from common import OUT, TRAITS, NEIGHBOUR_PAIRS, jload, jdump, log
 import geom as G
 from paths import labels, fit_path, path_curvature
 
 ap = argparse.ArgumentParser(); ap.add_argument("--reps", type=int, default=99); ap.add_argument("--nfield", type=int, default=20)
-ap.add_argument("--reps_list", default="neu,txt,res,sys"); ap.add_argument("--layers", default="primary"); ap.add_argument("--split", default="train")
+ap.add_argument("--reps_list", default="neu,txt,res,len,sys"); ap.add_argument("--layers", default="primary"); ap.add_argument("--split", default="train")
 args = ap.parse_args()
 LPROFILE = list(range(2, 26, 2))
+STATS = ("offline", "quadperp", "turn")
 
 
 def load_meta():
@@ -28,109 +31,138 @@ def load_meta():
     return rows, meta
 
 
-def ridge_resid(X, E, q, nfold=5, lam_rel=1e-2):
-    """X - E @ B, B fitted by ridge on the other question folds (lambda = lam_rel * trace(E'E)/dim)."""
-    Qs = np.unique(q); f = {v: i % nfold for i, v in enumerate(np.random.default_rng(0).permutation(Qs))}
-    fold = np.array([f[v] for v in q]); R = np.empty_like(X); r2 = []
-    for i in range(nfold):
-        tr, te = fold != i, fold == i
-        C = E[tr].T @ E[tr]; lam = lam_rel * np.trace(C) / C.shape[0]
-        B = np.linalg.solve(C + lam * np.eye(C.shape[0]), E[tr].T @ X[tr])
-        R[te] = X[te] - E[te] @ B; r2.append(1 - (R[te] ** 2).sum() / (X[te] ** 2).sum())
-    log("ridge text->act held-out R2", np.round(r2, 3))
-    return R
-
-
 def prompt_profile(meta):
-    """trivial control 1: the graded prompt itself, on the full judge profile (all splits)."""
+    """C1: the graded prompt itself on the full judge profile; H0 manipulation check and the +1 wording rule on TRAIN."""
     out = {}
-    for t in ["none"] + TRAITS:
-        for l in (LEVELS if t != "none" else [0]):
+    for t, levels in [("none", [0]), ("placebo", [1, 2, 3])] + [(t, [-3, 1, 2, 3]) for t in TRAITS]:
+        for l in levels:
             m = (meta["trait"] == t) & (meta["level"] == l)
-            if t != "none" and l == 0: continue
             out[f"{t}|{l}"] = dict(n=int(m.sum()), coh=float(meta["coh"][m].mean()), ntok=float(meta["ntok"][m].mean()),
                                    **{u: float(meta[f"P_{u}"][m].mean()) for u in TRAITS})
+    tr = meta["split"] == "train"; h0 = {}
+    for t in TRAITS:
+        P = lambda tt, l: float(meta[f"P_{t}"][tr & (meta["trait"] == tt) & (meta["level"] == l)].mean())
+        p0, p1, p2, p3 = P("placebo", 3), P(t, 1), P(t, 2), P(t, 3)
+        h0[t] = dict(placebo_strong=p0, slight=p1, moderate=p2, strong=p3, gain=p3 - p0, H0=bool(p3 - p0 >= .30),
+                     graded=bool(p0 < p1 < p3 and p0 < p2 < p3))
+    out["_H0"] = h0; out["_wording_rule_pass"] = bool(sum(v["graded"] for v in h0.values()) >= 4)
     return out
 
 
-def per_trait(X, meta, t, Z, rng, reps, nfield, full=True):
-    lad = G.ladder(meta, t); Xl = X[lad]; lev = meta["level"][lad]; smp = meta["sample"][lad]; q = meta["q"][lad]
-    r = dict(curve=G.curve_stats(Xl, lev, smp))
+def length_control(meta):
+    out = {}
+    for t in TRAITS:
+        m = meta["trait"] == t
+        out[t] = float(spearmanr(meta["level"][m], meta["ntok"][m])[0])
+    m = meta["trait"] == "placebo"; out["placebo"] = float(spearmanr(meta["level"][m], meta["ntok"][m])[0])
+    return out
+
+
+def ridge_resid(X, E, q, nfold=5, lams=(1e-3, 1e-2, 1e-1, 1.0)):
+    """X - E @ B, B by ridge on the other question folds; lambda (relative to trace(E'E)/dim) chosen by mean out-of-fold R2."""
+    Qs = np.unique(q); f = {v: i % nfold for i, v in enumerate(np.random.default_rng(0).permutation(Qs))}
+    fold = np.array([f[v] for v in q]); best = None
+    for lr in lams:
+        R = np.empty_like(X)
+        for i in range(nfold):
+            tr, te = fold != i, fold == i
+            C = E[tr].T @ E[tr]; lam = lr * np.trace(C) / C.shape[0]
+            R[te] = X[te] - E[te] @ np.linalg.solve(C + lam * np.eye(C.shape[0]), E[tr].T @ X[tr])
+        r2 = 1 - (R ** 2).sum() / (X ** 2).sum()
+        if best is None or r2 > best[0]: best = (r2, lr, R)
+    log(f"ridge text->act out-of-fold R2 {best[0]:.3f} (lambda_rel {best[1]})")
+    return best[2], float(best[0])
+
+
+def len_resid(X, ntok, q):
+    z = G.demean_by(np.log1p(ntok.astype(np.float64))[:, None], q)[:, 0]
+    return X - np.outer(z, z @ X / (z @ z))
+
+
+def pval(nulls, obs, key, greater=True):
+    v = np.array([x[key] for x in nulls], float); v = v[np.isfinite(v)]
+    if not np.isfinite(obs) or len(v) == 0: return np.nan
+    return float((1 + np.sum(v >= obs if greater else v <= obs)) / (1 + len(v)))
+
+
+def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True):
+    lad = G.ladder(meta, t); mL = {k: v[lad] for k, v in meta.items()}; Xl = X[lad]
+    r = {}
+    for side, two in (("one", False), ("two", True)):
+        c = G.curve_stats(Xl, mL, t, two); r[f"curve_{side}"] = {k: v for k, v in c.items() if k != "_M"}
+        if not full: continue
+        r[f"curve_{side}"]["ord1_p"] = G.ord1_relabel_p(c)
+        nl = [G.curve_stats(G.null_line(Xl, mL, t, rng, two), mL, t, two) for _ in range(reps)]
+        r[f"curve_{side}_null_line"] = {k: dict(mean=float(np.nanmean([x[k] for x in nl])), p95=float(np.nanpercentile([x[k] for x in nl], 95)),
+                                                p=pval(nl, c[k], k)) for k in STATS}
+        r[f"curve_{side}_null_line"]["straight"] = dict(mean=float(np.nanmean([x["straight"] for x in nl])),
+                                                        p05=float(np.nanpercentile([x["straight"] for x in nl], 5)), p=pval(nl, c["straight"], "straight", False))
+        sx = [G.curve_stats(G.null_simplex(Xl, mL, t, rng, two), mL, t, two) for _ in range(10)]
+        r[f"curve_{side}_ref_simplex"] = {k: float(np.nanmean([x[k] for x in sx])) for k in STATS + ("straight", "ord1")}
     if not full: return r
-    nl = [G.curve_stats(G.null_line(Xl, lev, q, rng), lev, smp) for _ in range(reps)]
-    r["curve_null_line"] = {k: dict(mean=float(np.nanmean([x[k] for x in nl])), p95=float(np.nanpercentile([x[k] for x in nl], 95)),
-                                    p=float((1 + np.sum([x[k] >= r["curve"][k] for x in nl])) / (1 + reps))) for k in ("offline", "quadperp", "turn")}
-    r["curve_null_line"]["straight"] = dict(mean=float(np.nanmean([x["straight"] for x in nl])),
-                                            p05=float(np.nanpercentile([x["straight"] for x in nl], 5)),
-                                            p=float((1 + np.sum([x["straight"] <= r["curve"]["straight"] for x in nl])) / (1 + reps)))
-    sx = [G.curve_stats(G.null_simplex(Xl, lev, q, rng), lev, smp) for _ in range(10)]
-    r["curve_ref_simplex"] = {k: float(np.nanmean([x[k] for x in sx])) for k in ("offline", "quadperp", "turn", "straight", "ord1")}
-    r["ord1_p"], _ = G.ord1_relabel_p(Xl, lev, smp)
-    r["input_dep"] = G.input_dependence(Xl, lev, q, smp, rng=rng, nboot=500)
-    Zl = Z[lad]; Dp, Dn = labels({k: v[lad] for k, v in meta.items()}, t)
-    r["n_pos"], r["n_neg"] = int(Dp.sum()), int(Dn.sum())
+    r["input_dep"] = G.input_dependence(Xl, mL, t, rng=rng, nboot=500)
+    Dp, Dn = labels(mL, t); r["n_pos"], r["n_neg"] = int(Dp.sum()), int(Dn.sum())
     if Dp.sum() >= 20 and Dn.sum() >= 20:
-        r["field"] = G.local_field(Zl, q, Dp, Dn, lev)
-        nf = []
+        tt = mL["trait"] == t; Zt = Z[lad][tt]; qt, lt, Dpt, Dnt = mL["q"][tt], mL["level"][tt], Dp[tt], Dn[tt]
+        r["field"] = G.local_field(Zt, qt, Dpt, Dnt, lt)
+        nf, sh, gn, pn = [], [], [], []
         for _ in range(nfield):
-            Xn = G.null_line(Xl, lev, q, rng); Zn = (Xn - Xn.mean(0)) @ PCAW.T
-            nf.append(G.local_field(Zn, q, Dp, Dn, lev))
-        sh = []
-        for _ in range(nfield):  # label shuffle within question among the labelled rows
-            lab = np.where(Dp, 1, np.where(Dn, -1, 0)); lab2 = lab.copy()
-            for v in np.unique(q):
-                w = np.where((q == v) & (lab != 0))[0]; lab2[w] = lab[rng.permutation(w)]
-            sh.append(G.local_field(Zl, q, lab2 == 1, lab2 == -1, lev))
+            Xn = G.null_line(Xl, mL, t, rng, True); Zn = (Xn - Xl.mean(0)) @ PCAW.T
+            nf.append(G.local_field(Zn[tt], qt, Dpt, Dnt, lt)); gn.append(G.geo_ratio(Zn[tt], lt)["geo_ratio"])
+            try: pn.append(path_curvature(fit_path(Zn, mL["level"] * tt, Dp, Dn)["pi"]))
+            except RuntimeError: pass
+            lab = np.where(Dpt, 1, np.where(Dnt, -1, 0)); lab2 = lab.copy()
+            for v in np.unique(qt):
+                w = np.where((qt == v) & (lab != 0))[0]; lab2[w] = lab[rng.permutation(w)]
+            sh.append(G.local_field(Zt, qt, lab2 == 1, lab2 == -1, lt))
         for k in ("field_coh", "field_rot"):
-            r["field"][k + "_null_line"] = [float(np.mean([x[k] for x in nf])), float(np.percentile([x[k] for x in nf], 5)), float(np.percentile([x[k] for x in nf], 95))]
-            r["field"][k + "_shuffle"] = [float(np.mean([x[k] for x in sh])), float(np.percentile([x[k] for x in sh], 5)), float(np.percentile([x[k] for x in sh], 95))]
-        r["geo"] = G.geo_ratio(Zl, lev)
-        gn = [G.geo_ratio((G.null_line(Xl, lev, q, rng) - Xl.mean(0)) @ PCAW.T, lev)["geo_ratio"] for _ in range(nfield)]
-        r["geo"]["null_line"] = [float(np.nanmean(gn)), float(np.nanpercentile(gn, 95))]
+            for nm, src in (("null_line", nf), ("shuffle", sh)):
+                v = [x[k] for x in src]; r["field"][f"{k}_{nm}"] = [float(np.mean(v)), float(np.percentile(v, 5)), float(np.percentile(v, 95))]
+        r["geo"] = G.geo_ratio(Zt, lt); r["geo"]["null_line"] = [float(np.nanmean(gn)), float(np.nanpercentile(gn, 95))]
         # attribution rule (prereg 6.4): fitted-path straightness on data vs the same fit on line-null data
         try:
-            ps = path_curvature(fit_path(Zl, lev, Dp, Dn)["pi"])
-            pn = [path_curvature(fit_path((G.null_line(Xl, lev, q, rng) - Xl.mean(0)) @ PCAW.T, lev, Dp, Dn)["pi"]) for _ in range(nfield)]
-            r["path"] = dict(straight=float(ps), null_mean=float(np.mean(pn)), null_p05=float(np.percentile(pn, 5)))
+            r["path"] = dict(straight=path_curvature(fit_path(Z[lad], mL["level"] * tt, Dp, Dn)["pi"]),
+                             null_mean=float(np.mean(pn)) if pn else np.nan, null_p05=float(np.percentile(pn, 5)) if pn else np.nan)
         except RuntimeError as e:
             r["path"] = dict(error=str(e))
-        mP = Dp
-        r["ideea_demeaned"] = G.ideea_connectivity(Zl[mP], meta["src"][lad][mP], meta["qid"][lad][mP], rng=rng)
+        r["ideea_demeaned"] = G.ideea_connectivity(Zt[Dpt], mL["src"][tt][Dpt], mL["qid"][tt][Dpt], rng=rng)
     return r
 
 
 if __name__ == "__main__":
     rows, meta0 = load_meta()
-    jdump(prompt_profile(meta0), f"{OUT}/prompt_profile.json")
-    split = meta0["split"] == args.split
+    jdump(prompt_profile(meta0), f"{OUT}/prompt_profile.json"); jdump(length_control(meta0), f"{OUT}/length.json")
+    split = meta0["split"] == args.split; idx = np.where(split)[0]
     meta = {k: v[split] for k, v in meta0.items()}
     lay = jload(f"{OUT}/layers.json") if os.path.exists(f"{OUT}/layers.json") else None
     rng = np.random.default_rng(0)
     for rep in args.reps_list.split(","):
         res = {}
         if rep == "txt":
-            src = {None: np.load(f"{OUT}/emb_gen_main.npy")}
+            src = {None: np.load(f"{OUT}/emb_gen_main.npy", mmap_mode="r")}
         else:
-            A = np.load(f"{OUT}/acts_{'neu' if rep == 'res' else rep}.npy", mmap_mode="r")
-            Ls = sorted(set(LPROFILE) | (set(lay.values()) if lay else set())) if args.layers == "all" else (sorted(set(lay.values())) if lay else LPROFILE)
-            src = {L: A for L in Ls}
+            A = np.load(f"{OUT}/acts_{'sys' if rep == 'sys' else 'neu'}.npy", mmap_mode="r")
+            prim = sorted(set(lay.values())) if lay else LPROFILE
+            src = {L: A for L in (sorted(set(LPROFILE) | set(prim)) if args.layers == "all" else prim)}
         for L, AA in src.items():
-            idx = np.where(split)[0]
             Xraw = np.asarray(AA[idx] if L is None else AA[idx, L], np.float64)
-            X = G.demean_by(Xraw, meta["q"])
-            if rep == "res":   # surface control 2: remove what a cross-fitted ridge from the text embedding predicts
-                X = ridge_resid(X, G.demean_by(np.load(f"{OUT}/emb_gen_main.npy")[idx].astype(np.float64), meta["q"]), meta["q"])
-            mu, PCAW = G.pca_fit(X, 64); Z = (X - mu) @ PCAW.T   # PCAW is read by per_trait (module global)
-            out = {}
+            X = G.demean_by(Xraw, meta["q"]); extra = {}
+            if rep == "res":
+                E = G.demean_by(np.load(f"{OUT}/emb_gen_main.npy")[idx].astype(np.float64), meta["q"])
+                X, extra["ridge_R2"] = ridge_resid(X, E, meta["q"])
+            if rep == "len":
+                X = len_resid(X, meta["ntok"], meta["q"])
+            mu, PCAW = G.pca_fit(X, 64); Z = (X - mu) @ PCAW.T
+            out = dict(extra)
             for t in TRAITS:
                 full = (L is None) or (lay is None) or (lay[t] == L)
-                out[t] = per_trait(X, meta, t, Z, rng, args.reps, args.nfield, full=full)
-            out["separation"] = G.separation(X, meta, TRAITS)
-            out["separation_ci"] = G.separation_boot(X, meta, TRAITS, NEIGHBOUR_PAIRS, nboot=100)
+                out[t] = per_trait(X, meta, t, Z, PCAW, rng, args.reps, args.nfield, full=full)
+            for anchor in ("placebo", "dpm"):
+                out[f"separation_{anchor}"] = G.separation(X, meta, TRAITS, anchor=anchor)
+                out[f"separation_{anchor}_ci"] = G.separation_boot(X, meta, TRAITS, NEIGHBOUR_PAIRS, nboot=100, anchor=anchor)
             acc = {}
             for a, b in NEIGHBOUR_PAIRS:
-                obs = G.knn_trait_acc(Z, meta, a, b)
-                nul = []
+                obs = G.knn_trait_acc(Z, meta, a, b); nul = []
                 for s in range(20):
                     m2 = dict(meta); tr = meta["trait"].copy(); sel = np.where(meta["Dpos"] & np.isin(tr, [a, b]))[0]
                     for v in np.unique(meta["q"][sel]):
@@ -138,11 +170,11 @@ if __name__ == "__main__":
                     m2["trait"] = tr; nul.append(G.knn_trait_acc(Z, m2, a, b, rng=np.random.default_rng(s)))
                 acc[f"{a}|{b}"] = dict(acc=obs, shuffle_mean=float(np.nanmean(nul)), shuffle_p95=float(np.nanpercentile(nul, 95)))
             out["knn_acc"] = acc
-            # raw (not demeaned) IDEEA clustering, as IDEEA does it
-            if L is not None:
-                Xr = Xraw; mr, Wr = G.pca_fit(Xr, 64); Zr = (Xr - mr) @ Wr.T
-                out["ideea_raw"] = {t: G.ideea_connectivity(Zr[labels(meta, t)[0]], meta["src"][labels(meta, t)[0]], meta["qid"][labels(meta, t)[0]], rng=rng)
-                                    for t in TRAITS if labels(meta, t)[0].sum() >= 20}
+            if L is not None and rep in ("neu", "sys"):   # IDEEA's own setting: RAW (not demeaned) activations
+                mr, Wr = G.pca_fit(Xraw, 64); Zr = (Xraw - mr) @ Wr.T; out["ideea_raw"] = {}
+                for t in TRAITS:
+                    Dp = labels(meta, t)[0]
+                    if Dp.sum() >= 20: out["ideea_raw"][t] = G.ideea_connectivity(Zr[Dp], meta["src"][Dp], meta["qid"][Dp], rng=rng)
             res[str(L)] = out
-            log(rep, L, {t: round(out[t]["curve"]["offline"], 3) for t in TRAITS})
+            log(rep, L, {t: round(out[t]["curve_one"]["offline"], 3) for t in TRAITS})
             jdump(res, f"{OUT}/geom_{rep}_{args.split}.json")

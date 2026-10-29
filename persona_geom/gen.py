@@ -4,15 +4,18 @@ usage: RUN=main python gen.py validate      wording check: 2 TRAIN questions per
        RUN=main python gen.py main          crossed design: all questions x 25 cells x S_PER_CELL samples
 Per row: q, cell (trait, level), paraphrase p = sample mod 5, response ids/text, ntok, natural_end.
 Activations (main only), float16 [N, 27, 2304], response tokens only, stop token excluded:
-  acts_sys = the response read in its generation context (graded system text prepended to the user turn);
+  acts_sys = the response read in its generation context (graded instruction prepended to the user turn);
   acts_neu = the same response re-read in the NEUTRAL context (no system text)  <- PRIMARY (prereg section 3).
 Sharded by question (resume-safe): <OUT>/gen_main/shard_XXX.{json,npz}; merged by merge().
 """
 import os, sys, glob, numpy as np
-from common import OUT, SMOKE, MAXNEW, S_PER_CELL, TRAITS, questions, cells, system_text, seed_of, jdump, jload, npsave, log
+from common import OUT, SMOKE, MAXNEW, S_PER_CELL, TRAITS, questions, cells, system_text, paraphrase, seed_of, jdump, jload, npsave, log
 from lm import LM
 
 STAGE = sys.argv[1]
+
+
+QINDEX = {q["qid"]: i for i, q in enumerate(questions(40))}
 
 
 def rows_for(qs, S):
@@ -20,12 +23,13 @@ def rows_for(qs, S):
     for qd in qs:
         for (t, l) in cells():
             for s in range(S):
-                rows.append(dict(qid=qd["qid"], src=qd["src"], split=qd["split"], q=qd["q"], trait=t, level=l, p=s % 5, sample=s))
+                rows.append(dict(qid=qd["qid"], src=qd["src"], split=qd["split"], q=qd["q"], trait=t, level=l,
+                                 p=paraphrase(QINDEX[qd["qid"]]), sample=s))
     return rows
 
 
 def run_rows(lm, rows, tag, acts=True):
-    ctx = [lm.chat_ids(system_text(r["trait"], r["level"], r["p"]) if r["trait"] != "none" else None, r["q"]) for r in rows]
+    ctx = [lm.chat_ids(system_text(r["trait"], r["level"], r["p"]), r["q"]) for r in rows]
     resps = lm.generate(ctx, seed_of(tag), MAXNEW)
     for r, x in zip(rows, resps):
         r["resp"] = x; r["text"] = lm.decode(x); r["ntok"] = len([t for t in x if t not in lm.stop])
@@ -64,7 +68,6 @@ if __name__ == "__main__":
         nq = int(os.environ.get("NQ_VALIDATE", "1" if SMOKE else "2"))
         qs = [q for t in TRAITS for q in [x for x in qs if x["src"] == t][:nq]]
         rows = rows_for(qs, 1)
-        for i, r in enumerate(rows): r["p"] = i % 5   # rotate paraphrases across the 1-sample cells
         rows, _, _ = run_rows(lm, rows, "validate", acts=False)
         for r in rows: r.pop("resp")
         jdump(rows, f"{OUT}/gen_validate.json"); log("validate rows", len(rows))

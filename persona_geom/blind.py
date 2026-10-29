@@ -28,10 +28,26 @@ question, fluent, no signs of confusion. An answer can be incorrect or mean and 
 """
 
 
+def _rows(tag):
+    p = f"{OUT}/judged_{tag}.json"
+    return jload(p if os.path.exists(p) else f"{OUT}/{tag}.json")
+
+
 def pack(tag, n, pss):
-    rows = jload(f"{OUT}/judged_{tag}.json")
+    rows = _rows(tag)
     rng = np.random.default_rng(seed_of("blind", tag))            # SAME item set for every pass
-    if "trait" in rows[0] and "level" in rows[0]:
+    if tag == "steer_eval":
+        # prereg 6.5: per (trait, arm), answers at the eval strength nearest the arm's matched-gain G_2 strength
+        summ = jload(f"{OUT}/steer_summary.json"); groups = {}
+        for t, S in summ.items():
+            mt = (S["point"]["matched"] or {}).get("2") or {}
+            for arm, v in mt.items():
+                if arm == "prompt" or not v: continue
+                fr = sorted({r["frac"] for r in rows if r["trait"] == t and r["arm"] == arm}, key=lambda f: abs(f - v["strength"]))
+                if fr: groups[(t, arm)] = [i for i, r in enumerate(rows) if r["trait"] == t and r["arm"] == arm and r["frac"] == fr[0]]
+        keys = sorted(groups); per = int(np.ceil(n / max(1, len(keys))))
+        pick = [i for k in keys for i in rng.choice(groups[k], min(per, len(groups[k])), replace=False)][:n]
+    elif "trait" in rows[0] and "level" in rows[0]:
         groups = {}
         for i, r in enumerate(rows): groups.setdefault((r["trait"], r["level"]), []).append(i)
         keys = sorted(groups); per = int(np.ceil(n / len(keys)))
@@ -51,7 +67,7 @@ def pack(tag, n, pss):
 
 
 def score(tag):
-    rows = jload(f"{OUT}/judged_{tag}.json"); res = {}; per_pass = {}
+    rows = _rows(tag); res = {}; per_pass = {}
     for pss in (1, 2, 3):
         d = os.path.join(HERE, "blind", f"{tag}_p{pss}")
         if not os.path.exists(f"{d}/labels.json"): continue
@@ -65,7 +81,13 @@ def score(tag):
         j = np.array([rows[i]["coh" if t == "coherence" else f"P_{t}"] for i in common])
         rho = spearmanr(j, ref)[0]
         rr = spearmanr([per_pass[1][i][t] for i in common], [per_pass[2][i][t] for i in common])[0] if {1, 2} <= set(per_pass) else np.nan
-        res[t] = dict(rho_judge_claude=float(rho), test_retest=float(rr), n=len(common), K0=bool(rho >= 0.6))
+        # within-cell Spearman (review minor: pooled rho is inflated by between-level contrasts)
+        cell = [(rows[i].get("trait"), rows[i].get("level", rows[i].get("arm"))) for i in common]; wr = []
+        for c in set(cell):
+            ii = [k for k, x in enumerate(cell) if x == c]
+            if len(ii) >= 8 and np.std(j[ii]) > 0 and np.std(ref[ii]) > 0: wr.append(spearmanr(j[ii], ref[ii])[0])
+        res[t] = dict(rho_judge_claude=float(rho), rho_within_cell_mean=float(np.mean(wr)) if wr else np.nan, test_retest=float(rr),
+                      n=len(common), K0=bool(rho >= 0.6))
         log(t, res[t])
     jdump(res, f"{OUT}/blind_{tag}.json")
 
