@@ -1,11 +1,12 @@
 # Prereg — Is persona steering space flat? (paper W, Zheng Wang's proposal, done the way it was proposed)
 
-Status: **DRAFT v1.1, 2026-10-29 — still before any persona-geometry data exists.** v1 (commit 121ff6e) was revised after an
+Status: **v1.1 + amendment A1 (2026-10-29) — still before any persona-geometry data exists.** A1 fills every former power-curve field
+from `results/power_curve.md` v2 (commit b591875); changed text is marked [A1]. v1 (commit 121ff6e) was revised after an
 adversarial Opus design review (2 fatal, 9 major findings; revision log at the end). Only CPU smoke tests on 2 questions/trait with
 8-token answers and pseudo-judge scores have been run, to debug code.
-Fields marked **TBD-PC** are filled from `results/power_curve.md` (parallel study; prereg `results/power_curve_prereg.md`) as a
-dated amendment **before any GPU stage is submitted**. `persona_geom/sbatch/submit.sh` refuses to submit while this file contains
-"TBD" or is uncommitted. After that, changes go into the amendment log, labelled.
+The power-curve fields were filled by amendment A1 (amendment log) before any GPU stage. `persona_geom/sbatch/submit*.sh` refuse to
+submit while this file contains the to-be-determined marker or is uncommitted; `submit.sh` also needs a passing pilot (§2.5).
+Later changes go into the amendment log, labelled.
 
 Code: `persona_geom/` (module docstrings). Raw outputs: `~/scratch/persona_geom/<RUN>/` (not in git).
 
@@ -39,22 +40,25 @@ Code: `persona_geom/` (module docstrings). Raw outputs: `~/scratch/persona_geom/
 - Neighbour pairs (primary for separation): evil–manipulative, evil–deceptive, manipulative–deceptive, sycophantic–flattering,
   hallucinating–deceptive. The other 10 pairs are the baseline.
 - Each trait file has 40 questions: q0–19 TRAIN (persona_vectors "extract"), q20–39 TEST ("eval"); 240 questions, disjoint (asserted).
-  Q_PER_TRAIT = **TBD-PC** (default 40; if the power curve asks for more, more questions are generated with the same pipeline).
-- **Crossed design**, 28 cells per question: bare neutral (no instruction); placebo × {slight, moderate, strong}; each trait ×
-  {slight, moderate, strong, neg-strong}. Balanced, so per-question mean removal is exact.
+  [A1] Q_PER_TRAIT = **40** (all of them): 240 crossed questions, so every trait ladder has **120 TRAIN questions** (the power curve
+  asks for ≈ 70; cell effects average out over questions, not samples).
+- **Crossed design**, [A1] **35 cells** per question: bare neutral (no instruction); placebo × {slight, moderate, strong, extreme}; each
+  trait × {slight, moderate, strong, extreme, neg-strong}. Balanced, so per-question mean removal is exact.
 
 ### 2.2 Instructions (`common.py`)
 - Every instructed cell has the same form: `FRAME[word] + "\nInstruction: " + instruction`, with FRAME = "Follow the instruction below
-  only slightly: let it show a little, and otherwise answer as you normally would." / "... moderately." / "... fully and strongly."
-- Trait instruction = persona_vectors pos instruction (levels 1–3) or neg instruction (level −3, strong frame), paraphrase
+  only slightly: let it show a little, and otherwise answer as you normally would." / "... moderately." / "... fully and strongly." /
+  [A1] "Follow the instruction below to the most extreme degree you can."
+- Trait instruction = persona_vectors pos instruction (levels 1–4) or neg instruction (level −3, strong frame), paraphrase
   p = question index mod 5 (fixed per question, so both sample halves of a cell share it; review finding 4).
 - Placebo instruction (trait-irrelevant, near-default; 5 paraphrases, e.g. "Your responses should be written in complete sentences.").
 - **Ladder of trait t** = placebo-referenced contrasts (difference-in-differences; any frame-word or instruction-presence offset
-  cancels): one-sided (PRIMARY, L = 4) c_0 = 0, c_k = mean(t, k) − mean(placebo, k), k = slight, moderate, strong; two-sided (L = 5)
+  cancels): one-sided (PRIMARY, [A1] L = 5) c_0 = 0, c_k = mean(t, k) − mean(placebo, k), k = slight, moderate, strong, extreme;
+  two-sided (L = 6)
   adds c_−3 = mean(t, neg-strong) − mean(placebo, strong).
-- S_PER_CELL = **TBD-PC** (default 4; even). Sampling T = 1, top-p 1, top-k off, ≤ 128 new tokens, stop `<end_of_turn>`/eos.
-- Wording check before the main run (`gen.py validate`, 2 TRAIN questions/trait × 28 cells): kept if for ≥ 4/6 traits the judged
-  target score orders placebo-strong < slight < strong and placebo-strong < moderate < strong (computed in `prompt_profile.json`).
+- [A1] S_PER_CELL = **2** (even, so the half split is balanced; budget spent on questions). Sampling T = 1, top-p 1, top-k off, ≤ 128 new tokens, stop `<end_of_turn>`/eos.
+- Wording check before the main run ([A1] on the pilot, §2.5): kept if for ≥ 4/6 traits the judged target score orders
+  placebo-strong < slight < strong, placebo-strong < moderate < strong, and extreme > moderate (`prompt_profile.json`).
   If it fails, the frames are rewritten once (amendment, before the main run).
 
 ### 2.3 Activations
@@ -70,7 +74,7 @@ Code: `persona_geom/` (module docstrings). Raw outputs: `~/scratch/persona_geom/
   the v3.1 0–9 coherence judge. Every answer gets all 6 scores + coherence.
 - D+_t = trait-t rows at slight/moderate/strong with P_t ≥ .75; D−_t = trait-t neg-strong rows with P_t ≤ .25.
 - **K0**: blind Claude Opus labels, two passes (separate subagents, new shuffle and ids, only {id, question, answer} + rubric,
-  0–4 per trait + 0–9 coherence, id→labels JSON), N_BLIND = **TBD-PC** (default 300) items stratified over cells. K0 per trait:
+  0–4 per trait + 0–9 coherence, id→labels JSON), [A1] N_BLIND = **300** items stratified over cells. K0 per trait:
   Spearman(P_u, mean Claude label) ≥ .6 pooled; the within-cell Spearman is also reported. A trait failing K0 is "judge-limited";
   its H5 result counts only if it holds on Claude labels (§6.5).
 
@@ -91,9 +95,13 @@ Code: `persona_geom/` (module docstrings). Raw outputs: `~/scratch/persona_geom/
 Split halves = all balanced bipartitions of sample indices within every (question, cell).
 - Ladder (identical definitions to power-curve C1–C4, applied to the placebo-referenced contrasts): C2 `offline` = 1 − top-1 share of
   the split-half cross-Gram; C3 `quadperp`; C1 `turn` (median corrected turning); C4 `ord1` with the exact order-relabel null
-  (L! relabelings; floor 2/24 for L = 4, 2/120 for L = 5); `straight` = cross-estimated chord / polyline; class SNR.
+  (L! relabelings; [A1] floor 2/120 for L = 5, 2/720 for L = 6); `straight` = cross-estimated chord / polyline; class SNR.
 - Line null: contrasts projected on their top PC (keeps unequal spacing; level 0 kept at 0); each trait row rebuilt as its own
-  question-and-sample-paired placebo row + line contrast + sign-flipped paired residual (wild bootstrap); 99 reps. (Synthetic: a
+  question-and-sample-paired placebo row + line contrast + paired residual. [A1] **PRIMARY test** (`geom.line_test`, built on the
+  paired differences D(q, level, sample) = trait row − placebo row, which is exact for these statistics): residuals around the
+  line fit (Freedman–Lane); two cell-level nulls, (a) whole (question, level) cells permuted across the non-zero levels within
+  question, (b) whole cells sign-flipped (robust to level-dependent cell variance); **p = max(p_a, p_b)**; 999 reps each.
+  The row-level v1.1 wild bootstrap is reported as secondary only (it is liberal under cell effects: test_geom.py). (Synthetic: a
   null built around pooled placebo means was biased low and would have called a straight line curved, p = 0; fixed.)
   Clustered reference: ladder points at orthogonal random directions with the observed spread.
 - Input dependence: d_q = mean(t, strong) − mean(placebo, strong) per question, split halves; D1 = share of reliable per-question
@@ -107,17 +115,26 @@ Split halves = all balanced bipartitions of sample indices within every (questio
 - Isomap geo_ratio between nodes nearest the neg-strong and strong centroids, vs line null.
 - IDEEA clusters: KMeans(4) on D+_t, raw (as IDEEA) and demeaned; AMI with question source; completeness(qid → cluster) vs a
   cluster-label shuffle; between-cluster kNN-edge share ÷ that of a flat Gaussian with D+'s mean and covariance.
-- Synthetic checks before data (`test_geom.py`, all pass): straight ladder with a large non-linear frame offset → offline 0.000
+- Synthetic checks before data (v1.1 design, L = 4; the A1 re-run is in the amendment log) (`test_geom.py`, all pass): straight ladder with a large non-linear frame offset → offline 0.000
   (line-null p95 .003, p = .53), while the bare-anchored ladder shows offline .040 (the confound is real and is removed); 90° arc →
   offline .054 (p < .03); D1 1.00 for a global direction, .53 for per-question rotations; r = 1.00 / .03 for same / orthogonal
   directions with the frame offset present; our `nearest_pos_neg` equals IDEEA's.
 
 ## 5. Geometry hypotheses (primary: TRAIN rows, acts_neu, l*_t; replication: TEST rows)
 - **H0 manipulation check**: P_t(strong) − P_t(placebo strong) ≥ .30 on TRAIN; failing traits are dropped from H1–H5 and reported.
-- **H1 shape** (one-sided ladder, L = 4). Primary curvature statistic(s) = **TBD-PC** (power-curve statistic-choice rule among
-  C1–C3; default C3 quadperp). Gate: two-sided ladder ord1 relabel p ≤ .025. Verdict per trait, Holm over H0-passing traits:
-  - **CURVED** if gate passes, primary statistic > line null (p ≤ .05, Holm), and value ≥ θ-effect = **TBD-PC**;
-  - **FLAT (powered)** if not significant and the power curve gives power ≥ .8 for a 60° bend at the measured SNR, L = 4 and n;
+- **H1 shape** (one-sided ladder, [A1] L = 5). [A1] Primary curvature statistic = **C3 quadperp** against the **cell-permutation**
+  line null; `offline` secondary; `turn`, `straight`, geo_ratio and field_rot descriptive only (no power: power_curve.md).
+  Gate [A1]: one-sided ladder ord1 relabel p ≤ .025. Verdict per trait, Holm over H0-passing traits:
+  - **NO GRADED ORDER** if the gate fails (shape not interpreted);
+  - **CURVED** if gate passes and the primary test of quadperp gives Holm-adjusted p ≤ .02 over the H0-passing traits (adjusted
+    p_(j) = max_{i ≤ j} (m − i + 1) p_(i); smallest raw threshold .02/6 ≈ .0033, hence 999 null reps);
+    [A1] No separate θ-effect value threshold (the power curve gives none that is calibrated); quadperp's value is reported;
+  - **FLAT (powered)** if gate passes, not CURVED, and the **in-sample planted-arc power** has a one-sided 90% Clopper–Pearson
+    lower bound ≥ .8: a 60° arc keeping the ladder's split-half positions along its direction, planted in the plane of that
+    direction and the top residual-cell PC (the hardest plane; a random plane is also reported), on the trait's own residual
+    cells (cell-permuted), tested with the primary test at the conservative Holm threshold .02/6 (`geom.planted_power`, 100
+    datasets × 599 reps per null). FLAT (powered) means "no bend of ≥ 60° over the ladder is present at this power"; 60° is a
+    convention;
   - otherwise **UNDETERMINED (underpowered)**.
   - Proposal's hypothesis: ≥ 3 H0-passing traits CURVED on `neu` and `res`.
   - The two-sided ladder is reported, but its bend between neg and positive poles is not counted as curvature: the neg instruction
@@ -134,6 +151,8 @@ Split halves = all balanced bipartitions of sample indices within every (questio
 
 ## 6. Steering (H5)
 ### 6.1 Layer (TRAIN)
+[A1] Curvature is measured only on prompt-built ladders (never on activations under a fixed-vector intervention, which are
+straight at the steering layer by construction).
 Persona vector u_t = mean(D+_t) − mean(D−_t) (demeaned) at l ∈ {6, 9, 12, 15, 18}, multipliers {1, 2, 4, 8}, 10 own-source TRAIN
 questions × 2 samples; l*_t = highest mean P_t among coherent multipliers (coherence ≥ neutral − 1; ties → lower l).
 
@@ -156,8 +175,8 @@ centroid. Synthetic noise floor of path straightness: .98 on a straight ladder v
 ### 6.3 Strengths
 - Calibration (TRAIN, 10 own questions × 2): pv, chord(s = 1), ideea1, ideea at strengths {.5, 1, 1.5, 2, 3, 4, 6, 8, 12}; max strength =
   smallest strength reaching the prompt-strong mean P_t with coherence ≥ neutral − 1 (else the largest coherent). geo, geo_null use chord's λ.
-- Evaluation (TEST): 20 own-source + 10 other-source TEST questions per trait; 8 strengths (fractions 0, 1/7, …, 1); S_STEER =
-  **TBD-PC** (default 4). Every answer: 6 judge scores, coherence, per-token KL(steered ‖ unsteered).
+- Evaluation (TEST): 20 own-source + 10 other-source TEST questions per trait; 8 strengths (fractions 0, 1/7, …, 1); [A1] S_STEER =
+  **4**. Every answer: 6 judge scores, coherence, per-token KL(steered ‖ unsteered).
 
 ### 6.4 Comparison at matched target gain (`analyze_steer.py`)
 - G_common = min(prompt strong gain, every arm's max coherent gain); G_j = j/4·G_common, **G_2 primary**.
@@ -175,21 +194,34 @@ centroid. Synthetic noise floor of path straightness: .98 on a straight ladder v
 - Secondary: matched per-token KL (rule 4); G_1, G_3.
 
 ### 6.5 Blind check of H5
-Blind Claude labels (K0 protocol) on N_BLIND_STEER = **TBD-PC** (default 240) steering answers, per (trait, arm) at the eval strength
+Blind Claude labels (K0 protocol) on [A1] N_BLIND_STEER = **240** steering answers, per (trait, arm) at the eval strength
 nearest the arm's G_2 strength (`blind.py pack steer_eval`). A H5a verdict is confirmed only if the Claude-label leakage difference
 has the same sign.
 
-## 7. Sizes and statistic choices from the power curve (filled before GPU)
-| field | value | source |
+## 7. Sizes and statistic choices from the power curve ([A1], filled 2026-10-29 from power_curve.md v2, commit b591875)
+| field | value | source / mapping |
 |---|---|---|
-| Q_PER_TRAIT | TBD-PC | power_curve.md design-size rule (q mode; our ladder L = 4, θ = 60°) |
-| S_PER_CELL | TBD-PC | same |
-| primary curvature statistic(s) | TBD-PC | power_curve.md statistic-choice rule |
-| θ-effect threshold (statistic value) | TBD-PC | power_curve.md |
-| power table for FLAT (powered) | TBD-PC | power_curve.md, at the measured SNR |
-| S_STEER, N_BLIND, N_BLIND_STEER | TBD-PC | CI half-width target ±.05 on the leakage difference |
-Note for the fill-in: the power curve simulates L ∈ {2, 5, 7} raw ladders; our primary ladder is L = 4 placebo-referenced contrasts
-(noise of a difference of two cells, i.e. ≈ 2× the per-cell variance). The amendment must state how the power numbers are mapped.
+| Q_PER_TRAIT | 40 → 240 questions, 120 TRAIN per ladder | power_curve headline 4: ≈ 70 q × 5 levels × 3 samples; questions beat samples under cell effects |
+| S_PER_CELL | 2 | variance of a question-averaged cell mean ∝ (κ/5 + 1/S)/Q: 120 × 2 gives .0051·W vs .0063·W for 70 × 3 (κ = .55) |
+| levels | L = 5 one-sided (placebo-referenced 0, slight, moderate, strong, extreme) | the designcheck simulation is L = 5 |
+| primary curvature statistic | quadperp, primary test = max-p of cell permutation and cell sign-flip (Freedman–Lane), Holm-adjusted p ≤ .02, 999 reps | power_curve Decisions 2; calibration re-checked in test_geom.py (A1) |
+| order gate | ord1 exact relabel p ≤ .025 (one-sided ladder) | power_curve Decisions 2 |
+| θ-effect threshold | none (dropped) | no calibrated value threshold exists |
+| power for FLAT (powered) | in-sample planted-arc60 power, 90% lower bound ≥ .8, hardest plane, α = .02/6 (§5 H1) | replaces a table look-up; uses the real residual cells and κ |
+| S_STEER, N_BLIND, N_BLIND_STEER | 4, 300, 240 | unchanged defaults (not a power-curve quantity) |
+Mapping note: no SNR threshold is carried over from the power curve (its SNR unit includes between-question variance, its anchor
+numbers are at p ≤ .05 with 39 reps and a different null); power is always simulated on our own residual cells (§5, §7.1).
+
+### 7.1 Pilot gate ([A1], before the main generation)
+- `RUN=pilot`: the first 5 TRAIN + 5 TEST questions per source (60 questions) × 35 cells × 2 samples (≈ 4.2k answers, ≈ 1.5 GPU-h),
+  judged; `pilot_check.py` on TRAIN rows, acts_neu, layers 6–18. Pilot data are used only for this gate, never for H0–H5 (the same
+  questions are regenerated in the main run with new samples).
+- Measured (`pilot_check.py`, CPU job c0, layers 8, 12, 16): κ (question × level cell effect, designcheck unit, overall and per
+  level; prior .55), split-half SNR_x, H0, wording rule, and the **projected power**: planted-arc60 power (hardest plane, primary
+  test at .02/6, 40 datasets) on the pilot's residual cells with questions resampled to the main design's 120 TRAIN questions.
+- **design_ok** = wording rule passes and ≥ 3 H0-passing traits have median projected power ≥ .8. `submit.sh` refuses otherwise.
+- If design_ok fails: wording fails → rewrite the frames once (amendment) and rerun the pilot; power fails → amendment choosing
+  between more questions (generated with the same pipeline) and stating H1 as likely UNDETERMINED; no main run without the amendment.
 
 ## 8. Pivot rules (rule 12)
 - H0 fails for ≥ 4 traits → stop after the prompt-profile report.
@@ -199,9 +231,9 @@ Note for the fill-in: the power curve simulates L ∈ {2, 5, 7} raw ladders; our
 
 ## 9. Compute plan
 GPU (Narval a100_3g.20gb, sequential afterok chain, one GPU job at a time, PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True):
-g1 generation + judge + embedding (240 q × 28 cells × 4 ≈ 27k answers, ~6–8 h), g2 layer sweep (~1 h), g3 calibration incl. IDEEA token
+[A1] g0 pilot (≈ 4.2k answers, ~1.5 h) → pilot_check → g1 generation + judge + embedding (240 q × 35 cells × 2 ≈ 16.8k answers, ~5–6 h), g2 layer sweep (~1 h), g3 calibration incl. IDEEA token
 states (~1.5 h), g4 evaluation (6 traits × 30 q × (1 + 7 strengths × 6 arms) × 4 ≈ 31k answers + batched KL, ~8 h). CPU: c1 geometry
-(TRAIN and TEST, after g2), c2 steering analysis (after g4). ≈ 17 GPU-h at default sizes.
+(TRAIN and TEST, after g2), c2 steering analysis (after g4). [A1] ≈ 17 GPU-h in total including the pilot.
 
 ## Revision log
 - **v1.1 (2026-10-29, pre-data, after the adversarial design review)**: placebo-referenced ladders with one uniform frame (finding 2);
@@ -212,4 +244,25 @@ states (~1.5 h), g4 evaluation (6 traits × 30 q × (1 + 7 strengths × 6 arms) 
   wild-bootstrap paired line null (found by test_geom.py).
 
 ## Amendment log
-(none yet)
+- **A1 (2026-10-29, pre-data; no GPU stage has run).** Fills the power-curve fields from `results/power_curve.md` v2 (commit b591875)
+  and the coordinator's recommendations, then revised after an adversarial Opus review of the amendment (2 fatal, 6 major):
+  1. a fourth intensity word "extreme" → one-sided ladder L = 5, 35 cells per question (§2.1–2.2);
+  2. sizes Q_PER_TRAIT 40 (120 TRAIN questions per ladder), S_PER_CELL 2, S_STEER 4, N_BLIND 300, N_BLIND_STEER 240 (§7);
+  3. primary test = max-p of two cell-level nulls (whole-cell permutation across levels within question; whole-cell sign flip),
+     Freedman–Lane residuals around the line fit, on the paired differences D (§4). Freedman–Lane rather than designcheck's
+     full-model residuals because the latter gave a null biased low in test_geom.py at κ = 0 (null quadperp mean −.0016 vs
+     observed +.0001). The row-level wild bootstrap of v1.1 is secondary (12/12 false rejections at p ≤ .1 with κ = 1);
+  4. H1: one-sided ord1 gate (p ≤ .025; conservative, because the noiseless level 0 is relabelled too), quadperp Holm-adjusted
+     p ≤ .02 with 999 reps (review fatal 1: with 99 reps Holm over ≥ 3 traits could never reject); θ-effect dropped; turn /
+     straight / geo_ratio / field_rot descriptive; FLAT (powered) by in-sample planted-arc60 power at the Holm threshold .02/6
+     (review fatal 2), hardest plane, 100 datasets, 90% lower bound ≥ .8 (§5);
+  5. curvature measured only on prompt-built ladders (§6.1);
+  6. pilot gate (§7.1) with projected power simulated on the pilot's own residual cells (review majors 3, 5, 8: no SNR-unit
+     conversion from the power curve); the `gen.py validate` wording check moves to the pilot;
+  7. κ estimator by cross-sample products with the demeaning bias corrected (review major 4: the first version gave .30 for .55).
+  Synthetic checks after A1 (`test_geom.py`, all pass; log `~/scratch/persona_geom/test_geom_A1.txt`): D-level statistics equal
+  the row-level ones (1e-9); primary-test FPR on straight ladders, 200 simulations each, at p ≤ .02 / .05: κ = 0 .005 / .02,
+  κ = .55 (S 2, Q 60) .005 / .03, κ = 1 .01 / .02, κ = 1 with cell variance growing with level .01 / .045 (the permutation null
+  alone: .025 / .055, so the sign-flip null matters there); arc90 with κ = 1, S = 2: p = .001 (floor); Holm matches the formula;
+  κ̂ .52 / .57 for planted .55 at S = 2 / 4; planted-arc60 power at the synthetic SNR ≥ .8. Not checked: calibration on real
+  activation backgrounds (the pilot's residual cells are used for power, not for FPR) — stated as a limitation.

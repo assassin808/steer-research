@@ -311,3 +311,22 @@ The running geometry agent was redirected accordingly; it must update its prereg
   Persona study: ord1 gate + quad⊥ vs cell-permutation line null at p≤.02–.025; ≈70 questions × 5 levels × 3 samples; read downstream
   of the steering layer. results/power_curve.md v2.
 - FOUND · B grid final (18 sims, tqa n=1200): O1 clust90 power .11/.00 (SNR .01/.1; noise at 0.001° scale), clust180 1.0; 1−OT R²_s50 clust90 .33/.94.
+
+## 2026-10-29 — persona-geom prereg amendment A1 (power-curve fill-in; pre-data)
+- DECIDED · A1 from results/power_curve.md v2 (b591875): 4th intensity word "extreme" → one-sided placebo-referenced ladder L = 5,
+  35 cells/question; Q_PER_TRAIT 40 (120 TRAIN q per ladder), S_PER_CELL 2, S_STEER 4, N_BLIND 300/240; H1 = ord1 gate (p ≤ .025) +
+  quad⊥ vs cell-permutation line null at p ≤ .02 Holm (999 reps, since .02/6 < 1/100); θ-effect dropped; turn/straight/geo/field
+  descriptive; FLAT (powered) = in-sample planted-arc60 power ≥ .8 (geom.planted_power); curvature only on prompt-built ladders.
+- FOUND · cell null with designcheck-style full-model residuals (R = D − c_k) was biased LOW at κ = 0 in test_geom (null quad⊥ mean
+  −.0016 vs obs +.0001) → Freedman–Lane residuals (R = D − line fit): calibrated (κ = 0 mean ≈ 0; κ = 1: FP 1/12 at p ≤ .1, wild
+  bootstrap 12/12 — the v1.1 null is invalid under cell effects), arc90 + κ = 1 still detected (p = floor 4/4). Cost: wider null under
+  curvature (arc offline vs null p95 2.6× instead of >3×). geom.cell_kappa recovers .50 for planted .55.
+- DECIDED · pilot gate: g0 (RUN=pilot, 60 q × 35 cells × 2) → pilot_check.py (κ, split-half SNR_x, H0, wording) → design_ok needed by
+  submit.sh. SNR_80 projection = 2 × .013 × rescaled cell-mean variance (approximation, stated).
+- REVIEWED · adversarial Opus review of A1: 2 fatal (Holm unreachable with 99 reps; planted power at unadjusted α), 6 major
+  (pilot SNR unit ≈3× lenient; κ estimator biased low .30 for .55; anchor numbers from looser conditions; cell-null calibration thin;
+  planted plane optimistic; pilot SNR inflated by cell effects). All handled before data: fast exact D-level tests (geom.line_test,
+  max-p of cell permutation + cell sign-flip, 999 reps), Holm + verdict code, planted power at .02/6 in the hardest plane with 90% CP
+  bound, pilot gate = bootstrap-projected planted power on the pilot's own residual cells (c0 CPU job), κ by cross-sample products with
+  demeaning correction (.52/.57 for .55). test_geom ALL PASS incl. 200-sim FPR checks (≤ .01 at p ≤ .02; ≤ .045 at .05 with
+  level-dependent cell variance). Limitation: FPR not re-checked on real activation backgrounds.

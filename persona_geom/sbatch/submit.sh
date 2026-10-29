@@ -6,6 +6,10 @@ cd $HOME/steer_math
 PR=results/persona_geom_prereg.md
 if grep -q "TBD" $PR; then echo "REFUSE: $PR still contains TBD fields (fill from results/power_curve.md first)"; exit 1; fi
 if ! git diff --quiet HEAD -- $PR || ! git ls-files --error-unmatch $PR >/dev/null 2>&1; then echo "REFUSE: $PR not committed"; exit 1; fi
+PC=$HOME/scratch/persona_geom/pilot/pilot_check.json
+if [ ! -f $PC ]; then echo "REFUSE: no pilot_check.json (run submit_pilot.sh first)"; exit 1; fi
+if ! grep -q '"design_ok": true' $PC && [ "${ALLOW_DESIGN_FAIL:-0}" != 1 ]; then
+  echo "REFUSE: pilot design_ok is false (amend the prereg, then ALLOW_DESIGN_FAIL=1)"; exit 1; fi
 cd persona_geom/sbatch
 BEGIN=${BEGIN:+--begin=$BEGIN}
 EXP="--export=ALL,RUN=${RUN:-main},Q_PER_TRAIT=${Q_PER_TRAIT:?},S_PER_CELL=${S_PER_CELL:?},S_STEER=${S_STEER:?}"

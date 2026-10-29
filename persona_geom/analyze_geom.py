@@ -8,13 +8,14 @@ Output: <OUT>/geom_<rep>_<split>.json, <OUT>/prompt_profile.json (C1 + H0 + word
 """
 import os, argparse, numpy as np
 from scipy.stats import spearmanr
-from common import OUT, TRAITS, NEIGHBOUR_PAIRS, jload, jdump, log
+from common import OUT, TRAITS, NEIGHBOUR_PAIRS, jload, jdump, log, cells
 import geom as G
 from paths import labels, fit_path, path_curvature
 
 ap = argparse.ArgumentParser(); ap.add_argument("--reps", type=int, default=99); ap.add_argument("--nfield", type=int, default=20)
 ap.add_argument("--reps_list", default="neu,txt,res,len,sys"); ap.add_argument("--layers", default="primary"); ap.add_argument("--split", default="train")
-args = ap.parse_args()
+args = ap.parse_known_args()[0]
+NSIM_POWER = int(os.environ.get("NSIM_POWER", 100))
 LPROFILE = list(range(2, 26, 2))
 STATS = ("offline", "quadperp", "turn")
 
@@ -34,7 +35,7 @@ def load_meta():
 def prompt_profile(meta):
     """C1: the graded prompt itself on the full judge profile; H0 manipulation check and the +1 wording rule on TRAIN."""
     out = {}
-    for t, levels in [("none", [0]), ("placebo", [1, 2, 3])] + [(t, [-3, 1, 2, 3]) for t in TRAITS]:
+    for t, levels in [("none", [0]), ("placebo", [1, 2, 3, 4])] + [(t, [-3, 1, 2, 3, 4]) for t in TRAITS]:
         for l in levels:
             m = (meta["trait"] == t) & (meta["level"] == l)
             out[f"{t}|{l}"] = dict(n=int(m.sum()), coh=float(meta["coh"][m].mean()), ntok=float(meta["ntok"][m].mean()),
@@ -42,9 +43,9 @@ def prompt_profile(meta):
     tr = meta["split"] == "train"; h0 = {}
     for t in TRAITS:
         P = lambda tt, l: float(meta[f"P_{t}"][tr & (meta["trait"] == tt) & (meta["level"] == l)].mean())
-        p0, p1, p2, p3 = P("placebo", 3), P(t, 1), P(t, 2), P(t, 3)
-        h0[t] = dict(placebo_strong=p0, slight=p1, moderate=p2, strong=p3, gain=p3 - p0, H0=bool(p3 - p0 >= .30),
-                     graded=bool(p0 < p1 < p3 and p0 < p2 < p3))
+        p0, p1, p2, p3, p4 = P("placebo", 3), P(t, 1), P(t, 2), P(t, 3), P(t, 4)
+        h0[t] = dict(placebo_strong=p0, slight=p1, moderate=p2, strong=p3, extreme=p4, gain=p3 - p0, H0=bool(p3 - p0 >= .30),
+                     graded=bool(p0 < p1 < p3 and p0 < p2 < p3 and p4 > p2))
     out["_H0"] = h0; out["_wording_rule_pass"] = bool(sum(v["graded"] for v in h0.values()) >= 4)
     return out
 
@@ -85,21 +86,29 @@ def pval(nulls, obs, key, greater=True):
     return float((1 + np.sum(v >= obs if greater else v <= obs)) / (1 + len(v)))
 
 
-def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True):
+def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True, power=False):
     lad = G.ladder(meta, t); mL = {k: v[lad] for k, v in meta.items()}; Xl = X[lad]
     r = {}
     for side, two in (("one", False), ("two", True)):
         c = G.curve_stats(Xl, mL, t, two); r[f"curve_{side}"] = {k: v for k, v in c.items() if k != "_M"}
         if not full: continue
         r[f"curve_{side}"]["ord1_p"] = G.ord1_relabel_p(c)
-        nl = [G.curve_stats(G.null_line(Xl, mL, t, rng, two), mL, t, two) for _ in range(reps)]
+        lc = G.ladder_cells(Xl, mL, t, two)
+        r[f"curve_{side}_test"] = G.line_test(lc["D"], lc, rng, reps)        # PRIMARY (A1): max-p of cell permutation / cell sign-flip
+        nl = [G.curve_stats(G.null_line(Xl, mL, t, rng, two), mL, t, two) for _ in range(min(reps, 99))]   # row-level, descriptive
         r[f"curve_{side}_null_line"] = {k: dict(mean=float(np.nanmean([x[k] for x in nl])), p95=float(np.nanpercentile([x[k] for x in nl], 95)),
                                                 p=pval(nl, c[k], k)) for k in STATS}
         r[f"curve_{side}_null_line"]["straight"] = dict(mean=float(np.nanmean([x["straight"] for x in nl])),
                                                         p05=float(np.nanpercentile([x["straight"] for x in nl], 5)), p=pval(nl, c["straight"], "straight", False))
+        nw = [G.curve_stats(G.null_line(Xl, mL, t, rng, two, mode="wild"), mL, t, two) for _ in range(min(reps, 99))]
+        r[f"curve_{side}_null_line_wild"] = {k: dict(p=pval(nw, c[k], k)) for k in STATS}     # v1.1 null, secondary (liberal under cell effects)
         sx = [G.curve_stats(G.null_simplex(Xl, mL, t, rng, two), mL, t, two) for _ in range(10)]
         r[f"curve_{side}_ref_simplex"] = {k: float(np.nanmean([x[k] for x in sx])) for k in STATS + ("straight", "ord1")}
     if not full: return r
+    r["kappa"] = G.cell_kappa(Xl, mL, t, C=len(cells()))
+    if power:   # in-sample power for FLAT (powered), A1: planted arc60, primary test at the conservative Holm threshold .02/6
+        lc = G.ladder_cells(Xl, mL, t)
+        r["planted_arc60"] = {pl: G.planted_power(lc["D"], lc, rng, .02 / len(TRAITS), 60.0, pl, nsim=NSIM_POWER) for pl in ("noise", "random")}
     r["input_dep"] = G.input_dependence(Xl, mL, t, rng=rng, nboot=500)
     Dp, Dn = labels(mL, t); r["n_pos"], r["n_neg"] = int(Dp.sum()), int(Dn.sum())
     if Dp.sum() >= 20 and Dn.sum() >= 20:
@@ -129,6 +138,23 @@ def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True):
     return r
 
 
+def h1_verdicts(res, lay, h0):
+    """CURVED: ord1 relabel p <= .025 (one-sided) and Holm-adjusted primary quadperp p <= .02 over H0-passing traits.
+    FLAT (powered): not CURVED and planted-arc60 power (noise plane, alpha .02/6) has 90% lower bound >= .8. Else UNDETERMINED."""
+    T = [t for t in TRAITS if h0[t]["H0"] and str(lay[t]) in res and "curve_one_test" in res[str(lay[t])][t]]
+    p = {t: res[str(lay[t])][t]["curve_one_test"]["p_quadperp"] for t in T}; ph = G.holm(p) if p else {}
+    out = {}
+    for t in TRAITS:
+        if t not in T: out[t] = dict(verdict="DROPPED (H0 failed or missing)"); continue
+        r = res[str(lay[t])][t]; gate = r["curve_one"]["ord1_p"] <= .025
+        pw = r.get("planted_arc60", {}).get("noise", {})
+        if not gate: v = "NO GRADED ORDER (gate failed; shape not interpreted)"
+        elif ph[t] <= .02: v = "CURVED"
+        else: v = "FLAT (powered)" if pw.get("lo90", 0) >= .8 else "UNDETERMINED (underpowered)"
+        out[t] = dict(verdict=v, gate=bool(gate), p=p[t], p_holm=ph[t], power=pw.get("power"), power_lo90=pw.get("lo90"), layer=lay[t])
+    return out
+
+
 if __name__ == "__main__":
     rows, meta0 = load_meta()
     jdump(prompt_profile(meta0), f"{OUT}/prompt_profile.json"); jdump(length_control(meta0), f"{OUT}/length.json")
@@ -156,7 +182,7 @@ if __name__ == "__main__":
             out = dict(extra)
             for t in TRAITS:
                 full = (L is None) or (lay is None) or (lay[t] == L)
-                out[t] = per_trait(X, meta, t, Z, PCAW, rng, args.reps, args.nfield, full=full)
+                out[t] = per_trait(X, meta, t, Z, PCAW, rng, args.reps, args.nfield, full=full, power=full and rep in ("neu", "res") and L is not None)
             for anchor in ("placebo", "dpm"):
                 out[f"separation_{anchor}"] = G.separation(X, meta, TRAITS, anchor=anchor)
                 out[f"separation_{anchor}_ci"] = G.separation_boot(X, meta, TRAITS, NEIGHBOUR_PAIRS, nboot=100, anchor=anchor)
@@ -176,5 +202,7 @@ if __name__ == "__main__":
                     Dp = labels(meta, t)[0]
                     if Dp.sum() >= 20: out["ideea_raw"][t] = G.ideea_connectivity(Zr[Dp], meta["src"][Dp], meta["qid"][Dp], rng=rng)
             res[str(L)] = out
+            if lay is not None and rep != "txt":   # H1 verdicts at each trait's primary layer (prereg section 5, A1)
+                res["H1"] = h1_verdicts(res, lay, jload(f"{OUT}/prompt_profile.json")["_H0"])
             log(rep, L, {t: round(out[t]["curve_one"]["offline"], 3) for t in TRAITS})
             jdump(res, f"{OUT}/geom_{rep}_{args.split}.json")

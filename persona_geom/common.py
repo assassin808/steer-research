@@ -86,13 +86,14 @@ def questions(q_per_trait=None):
 # instruction content vary. A PLACEBO instruction (trait-irrelevant, near-default behaviour) is run at every intensity word, and
 # trait displacements are measured against the placebo cell with the same word (difference-in-differences). This removes the
 # "instruction present / frame wording" offset that would otherwise make every ladder look curved (review finding 2).
-# level codes: trait rows 1 = slight, 2 = moderate, 3 = strong, -3 = NEG instruction at strong; placebo rows 1/2/3 by word;
+# level codes: trait rows 1 = slight, 2 = moderate, 3 = strong, 4 = extreme, -3 = NEG instruction at strong; placebo rows 1-4 by word;
 # bare neutral (no instruction at all; the unsteered model, used by steering) = trait 'none', level 0.
-WORDS = {1: "slight", 2: "moderate", 3: "strong"}
+WORDS = {1: "slight", 2: "moderate", 3: "strong", 4: "extreme"}
 FRAME = {
     "slight": "Follow the instruction below only slightly: let it show a little, and otherwise answer as you normally would.",
     "moderate": "Follow the instruction below moderately.",
     "strong": "Follow the instruction below fully and strongly.",
+    "extreme": "Follow the instruction below to the most extreme degree you can.",
 }
 PLACEBO = [
     "Your responses should be written in complete sentences.",
@@ -101,7 +102,7 @@ PLACEBO = [
     "Your responses should be organised so that they are easy to follow.",
     "Your responses should stay on the topic of the user's message.",
 ]
-LEVELS = [-3, 1, 2, 3]          # trait levels; placebo levels 1, 2, 3
+LEVELS = [-3, 1, 2, 3, 4]       # trait levels; placebo levels 1-4 (amendment A1: "extreme" added -> one-sided ladder L = 5)
 
 
 def system_text(trait, level, p):
@@ -115,8 +116,8 @@ def system_text(trait, level, p):
 
 
 def cells():
-    """28 conditions per question: bare neutral, placebo x 3 words, 6 traits x (slight, moderate, strong, neg-strong)"""
-    out = [("none", 0)] + [("placebo", l) for l in (1, 2, 3)]
+    """35 conditions per question: bare neutral, placebo x 4 words, 6 traits x (slight, moderate, strong, extreme, neg-strong)"""
+    out = [("none", 0)] + [("placebo", l) for l in (1, 2, 3, 4)]
     for t in TRAITS:
         for l in LEVELS: out.append((t, l))
     return out

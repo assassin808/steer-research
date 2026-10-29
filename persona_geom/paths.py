@@ -55,7 +55,8 @@ def denoise(Z, m=20, rounds=2):
 
 def fit_path(Z, lev, Dp, Dn, k=10, power=2.0, M=201, m_denoise=20, smooth="cubic"):
     lo = Z[Dn & (lev == -3)].mean(0) if (Dn & (lev == -3)).any() else Z[Dn].mean(0)
-    hi = Z[Dp & (lev == 3)].mean(0) if (Dp & (lev == 3)).any() else Z[Dp].mean(0)
+    top = 4 if (Dp & (lev == 4)).any() else 3            # extreme if it has clear positives, else strong (A1)
+    hi = Z[Dp & (lev == top)].mean(0) if (Dp & (lev == top)).any() else Z[Dp].mean(0)
     Z = denoise(Z, m_denoise) if m_denoise else Z
     a, b = np.argmin(((Z - lo) ** 2).sum(1)), np.argmin(((Z - hi) ** 2).sum(1))
     for kk in (k, 2 * k, 4 * k, 8 * k, len(Z) - 1):        # grow k until the endpoints are connected (k_used is reported)

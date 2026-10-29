@@ -37,8 +37,8 @@ def _agg(rows_list, t):
 
 def prompt_curve(G, t, qids):
     rows_list = [[r for r in G if r["trait"] == "none" and r["qid"] in qids]] + \
-                [[r for r in G if r["trait"] == t and r["level"] == l and r["qid"] in qids] for l in (1, 2, 3)]
-    o = dict(x=[0, 1, 2, 3], **_agg(rows_list, t)); o["kl"] = [np.nan] * 4      # prompting has no KL to the unsteered model here
+                [[r for r in G if r["trait"] == t and r["level"] == l and r["qid"] in qids] for l in (1, 2, 3, 4)]
+    o = dict(x=[0, 1, 2, 3, 4], **_agg(rows_list, t)); o["kl"] = [np.nan] * 5      # prompting has no KL to the unsteered model here
     return o
 
 
