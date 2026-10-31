@@ -7,6 +7,7 @@ Primary layer per trait = l*_t from <OUT>/layers.json (steering sweep); if absen
 Output: <OUT>/geom_<rep>_<split>.json, <OUT>/prompt_profile.json (C1 + H0 + wording rule), <OUT>/length.json (C4).
 """
 import os, argparse, numpy as np
+from sklearn.cluster import KMeans
 from scipy.stats import spearmanr
 from common import OUT, TRAITS, NEIGHBOUR_PAIRS, jload, jdump, log, cells
 import geom as G
@@ -86,15 +87,24 @@ def pval(nulls, obs, key, greater=True):
     return float((1 + np.sum(v >= obs if greater else v <= obs)) / (1 + len(v)))
 
 
-def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True, power=False):
+def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True, power=False, maps=None, Xraw=None):
     lad = G.ladder(meta, t); mL = {k: v[lad] for k, v in meta.items()}; Xl = X[lad]
     r = {}
+    if maps is not None:   # A2: leave-trait-out metric (Sigma_w from the cells that D is NOT built from)
+        maps, r["sigma_w"] = G.sigma_w_maps(X, meta, exclude=(t, "placebo"))
+    M2 = maps["M2"] if maps else None
     for side, two in (("one", False), ("two", True)):
         c = G.curve_stats(Xl, mL, t, two); r[f"curve_{side}"] = {k: v for k, v in c.items() if k != "_M"}
         if not full: continue
         r[f"curve_{side}"]["ord1_p"] = G.ord1_relabel_p(c)
         lc = G.ladder_cells(Xl, mL, t, two)
-        r[f"curve_{side}_test"] = G.line_test(lc["D"], lc, rng, reps)        # PRIMARY (A1): max-p of cell permutation / cell sign-flip
+        # PRIMARY (A1 + A2): max-p of cell permutation / cell sign-flip, computed once, under the Sigma_w metric (M2)
+        D2 = G.apply_metric(lc["D"], M2)
+        r[f"curve_{side}_test"] = G.line_test(D2, lc, rng, reps, keys=("quadperp", "offline", "R"))
+        r[f"curve_{side}_test"]["ord1_p"] = G.ord1_relabel_p(G.stats_D(D2, lc))     # order gate under the same metric
+        if maps:   # A2 effect-size panel M0 raw / M1 z / M2 Sigma_w (tests are not repeated: the nulls are metric invariant)
+            r[f"curve_{side}_panel"] = {mn: {k: v for k, v in G.stats_D(G.apply_metric(lc["D"], T), lc).items() if k != "_M"}
+                                        for mn, T in maps.items()}
         nl = [G.curve_stats(G.null_line(Xl, mL, t, rng, two), mL, t, two) for _ in range(min(reps, 99))]   # row-level, descriptive
         r[f"curve_{side}_null_line"] = {k: dict(mean=float(np.nanmean([x[k] for x in nl])), p95=float(np.nanpercentile([x[k] for x in nl], 95)),
                                                 p=pval(nl, c[k], k)) for k in STATS}
@@ -107,10 +117,26 @@ def per_trait(X, meta, t, Z, PCAW, rng, reps, nfield, full=True, power=False):
     if not full: return r
     r["kappa"] = G.cell_kappa(Xl, mL, t, C=len(cells()))
     if power:   # in-sample power for FLAT (powered), A1: planted arc60, primary test at the conservative Holm threshold .02/6
-        lc = G.ladder_cells(Xl, mL, t)
-        r["planted_arc60"] = {pl: G.planted_power(lc["D"], lc, rng, .02 / len(TRAITS), 60.0, pl, nsim=ns)
+        lc = G.ladder_cells(Xl, mL, t); D2 = G.apply_metric(lc["D"], M2)
+        r["planted_arc60"] = {pl: G.planted_power(D2, lc, rng, .02 / len(TRAITS), 60.0, pl, nsim=ns)
                               for pl, ns in (("noise", NSIM_POWER), ("random", max(NSIM_POWER // 3, 2)))}   # random plane: descriptive
     r["input_dep"] = G.input_dependence(Xl, mL, t, rng=rng, nboot=500)
+    if maps:   # A2 method 2: heterogeneity tau^2 / H / I2 / cos_x (panel; sign-flip test under M2), predictability, IDEEA split
+        lc = G.ladder_cells(Xl, mL, t); het = {}
+        for mn, T in maps.items():
+            h = G.heterogeneity(G.apply_metric(lc["D"], T), lc, rng, 999 if mn == "M2" else 0)
+            dA, dB = h.pop("_dA"), h.pop("_dB"); het[mn] = h
+            if mn == "M2" and Xraw is not None:
+                Qs = np.unique(mL["q"][mL["trait"] == t]); Xr = Xraw[lad]
+                Xb = np.stack([Xr[(mL["q"] == v) & (mL["trait"] == "none")].mean(0) for v in Qs])
+                het["predict"] = G.predictability(dA, dB, Xb, rng)
+                Dpr = labels(mL, t)[0]
+                if Dpr.sum() >= 20:
+                    km = KMeans(4, n_init=10, random_state=0).fit(Xr[Dpr])
+                    het["ideea_split"] = G.cluster_split(dA, dB, km.predict(Xb))
+        for mn in het:
+            if mn in maps: het[mn].pop("p_tau2", None) if mn != "M2" else None
+        r["heterogeneity"] = het
     Dp, Dn = labels(mL, t); r["n_pos"], r["n_neg"] = int(Dp.sum()), int(Dn.sum())
     if Dp.sum() >= 20 and Dn.sum() >= 20:
         tt = mL["trait"] == t; Zt = Z[lad][tt]; qt, lt, Dpt, Dnt = mL["q"][tt], mL["level"][tt], Dp[tt], Dn[tt]
@@ -147,12 +173,19 @@ def h1_verdicts(res, lay, h0):
     out = {}
     for t in TRAITS:
         if t not in T: out[t] = dict(verdict="DROPPED (H0 failed or missing)"); continue
-        r = res[str(lay[t])][t]; gate = r["curve_one"]["ord1_p"] <= .025
+        r = res[str(lay[t])][t]; gate = r["curve_one_test"]["ord1_p"] <= .025
         pw = r.get("planted_arc60", {}).get("noise", {})
         if not gate: v = "NO GRADED ORDER (gate failed; shape not interpreted)"
         elif ph[t] <= .02: v = "CURVED"
         else: v = "FLAT (powered)" if pw.get("lo90", 0) >= .8 else "UNDETERMINED (underpowered)"
         out[t] = dict(verdict=v, gate=bool(gate), p=p[t], p_holm=ph[t], power=pw.get("power"), power_lo90=pw.get("lo90"), layer=lay[t])
+    # A2 H2b: tau^2 > 0 (sign-flip, M2), Holm over the same traits at .05; structured if the predictability share has p <= .05
+    pt = {t: res[str(lay[t])][t]["heterogeneity"]["M2"]["p_tau2"] for t in T if "heterogeneity" in res[str(lay[t])][t]}
+    pth = G.holm(pt) if pt else {}
+    for t in pt:
+        hz = res[str(lay[t])][t]["heterogeneity"]; pr = hz.get("predict", {})
+        out[t]["H2b"] = dict(p_tau2=pt[t], p_tau2_holm=pth[t], H=hz["M2"]["H"], I2=hz["M2"]["I2"], heterogeneous=bool(pth[t] <= .05),
+                             predict_share=pr.get("share"), predict_p=pr.get("p"), structured=bool(pth[t] <= .05 and pr.get("p", 1) <= .05))
     return out
 
 
@@ -180,10 +213,12 @@ if __name__ == "__main__":
             if rep == "len":
                 X = len_resid(X, meta["ntok"], meta["q"])
             mu, PCAW = G.pca_fit(X, 64); Z = (X - mu) @ PCAW.T
+            maps = {}   # per-trait leave-trait-out metric maps are built inside per_trait (A2)
             out = dict(extra)
             for t in TRAITS:
                 full = (L is None) or (lay is None) or (lay[t] == L)
-                out[t] = per_trait(X, meta, t, Z, PCAW, rng, args.reps, args.nfield, full=full, power=full and rep in ("neu", "res") and L is not None)
+                out[t] = per_trait(X, meta, t, Z, PCAW, rng, args.reps, args.nfield, full=full, power=full and rep in ("neu", "res") and L is not None,
+                                   maps=maps if full else None, Xraw=Xraw)
             for anchor in ("placebo", "dpm"):
                 out[f"separation_{anchor}"] = G.separation(X, meta, TRAITS, anchor=anchor)
                 out[f"separation_{anchor}_ci"] = G.separation_boot(X, meta, TRAITS, NEIGHBOUR_PAIRS, nboot=100, anchor=anchor)

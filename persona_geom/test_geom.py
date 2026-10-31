@@ -14,14 +14,18 @@ Q, S, d, TR = 40, 4, 128, ["a", "b"]
 POS = {-3: -1.0, 1: 0.25, 2: 0.5, 3: 0.75, 4: 1.0}       # ladder position of each trait level (placebo-referenced level 0 = 0)
 
 
-def make(shape="line", snr=0.5, hetero=0.0, same_dir=False, frame=3.0, kappa=0.0, S=S, Q=Q, kslope=0.0):
+def make(shape="line", snr=0.5, hetero=0.0, same_dir=False, frame=3.0, kappa=0.0, S=S, Q=Q, kslope=0.0, aniso=0.0, struct=False):
     """kappa: question x cell random effect, E||cell||^2 = kappa x W_eps / 5 (power/designcheck.py unit); kslope: cell variance
     multiplied by (1 + kslope * |level|) (level-dependent cell effects)"""
     B = np.linalg.qr(rng.standard_normal((d, 8)))[0].T
     off = {w: frame * (w / 3) ** 0.5 * B[6] + frame * B[7] for w in (1, 2, 3, 4)}   # frame offsets: big, non-linear in word
     amp = np.sqrt(snr * d / 0.35)
-    rot = hetero * rng.standard_normal(Q)
     mu_q = 2 * rng.standard_normal((Q, d))
+    if struct:   # per-question rotation predictable from the question's base state, along a major base-state axis
+        g = rng.standard_normal(Q); mu_q = mu_q + 4 * np.outer(g, B[5]); rot = hetero * g
+    else:
+        rot = hetero * rng.standard_normal(Q)
+    nsd = np.exp(aniso * rng.standard_normal(d))   # anisotropic noise scales (aniso = log-SD)
 
     def gam(ti, x, qi):
         u, v = (B[0], B[1]) if (same_dir or ti == 0) else (B[2], B[3])
@@ -38,7 +42,7 @@ def make(shape="line", snr=0.5, hetero=0.0, same_dir=False, frame=3.0, kappa=0.0
         for t, l in cells:
             ce = np.sqrt(kappa / 5 * (1 + kslope * abs(l))) * rng.standard_normal(d)
             for s in range(S):
-                x = mu_q[qi] + ce + rng.standard_normal(d)
+                x = mu_q[qi] + ce + nsd * rng.standard_normal(d)
                 if t != "none": x = x + off[abs(l)]
                 if t in TR: x = x + gam(TR.index(t), POS[l], qi)
                 X.append(x); meta["q"].append(qi); meta["trait"].append(t); meta["level"].append(l); meta["sample"].append(s)
@@ -130,6 +134,52 @@ for same in (True, False):
     print("separation (placebo anchor)", "same_dir" if same else "orthogonal", round(r, 3))
     ok &= check("separation r ~ 1 if same direction" if same else "separation r ~ 0 if orthogonal (frame offset cancelled)",
                 (r > .9) if same else (abs(r) < .15))
+
+# ---- amendment A2 calibration (literature-review methods 1-3): every new statistic is checked here before it is used.
+def prep(**kw):
+    X, m = make(**kw); Xd = G.demean_by(X, m["q"]); lad = G.ladder(m, "a"); mL = {k: v[lad] for k, v in m.items()}
+    lc = G.ladder_cells(Xd[lad], mL, "a"); maps, _ = G.sigma_w_maps(Xd, m, exclude=("a", "placebo"))
+    Qs = np.unique(mL["q"][mL["trait"] == "a"]); Xr = X[lad]
+    Xb = np.stack([Xr[(mL["q"] == v) & (mL["trait"] == "none")].mean(0) for v in Qs])
+    return lc, maps, Xb
+# (a) trend energies: cross estimate unbiased on a pure-noise ladder; the same-sample version is biased up
+ex, es = [], []
+for _ in range(100):
+    lc, maps, _ = prep(snr=0.0, frame=0.0, S=2, Q=60); st = G.stats_D(lc["D"], lc); ex.append(st["E2"])
+    c = G._full(lc["D"].mean((0, 2)), lc); es.append(float((G._polys(5)[1] @ c) @ (G._polys(5)[1] @ c)))
+ex, es = np.array(ex), np.array(es); print("E2 pure noise: cross mean", ex.mean(), "+-", ex.std() / 10, "; same-sample mean", es.mean())
+ok &= check("E2 cross-estimate unbiased (|mean| < 3 SE) and same-sample biased (> 10 SE)", abs(ex.mean()) < 3 * ex.std() / 10 and es.mean() > 10 * es.std() / 10)
+# (b) primary test under the Sigma_w metric (M2) with anisotropic noise: FPR and power
+ps, pa = [], []
+for i in range(100):
+    lc, maps, _ = prep(frame=0.0, kappa=0.55, S=2, Q=60, aniso=1.0)
+    ps.append(G.line_test(G.apply_metric(lc["D"], maps["M2"]), lc, rng, 99, keys=("quadperp", "R"))["p_quadperp"])
+for i in range(10):
+    lc, maps, _ = prep(shape="arc", snr=0.2, frame=0.0, kappa=0.55, S=2, Q=60, aniso=1.0)
+    pa.append(G.line_test(G.apply_metric(lc["D"], maps["M2"]), lc, rng, 299, keys=("quadperp",))["p_quadperp"])
+ps, pa = np.array(ps), np.array(pa); print("M2 primary: FPR (.02, .05)", (ps <= .02).mean(), (ps <= .05).mean(), "; arc90 snr .2 power at .02/6", (pa <= .02 / 6).mean())
+ok &= check("M2 primary test FPR <= .045 at .02 and <= .09 at .05 (100 sims, kappa .55, anisotropic noise)", (ps <= .02).mean() <= .045 and (ps <= .05).mean() <= .09)
+ok &= check("M2 primary test power >= .8 for arc90 at snr .2 (10 sims)", (pa <= .02 / 6).mean() >= .8)
+# (c) heterogeneity tau^2 sign-flip test: FPR with one global direction, power with per-question rotations
+pf, pp_, Hs = [], [], []
+for _ in range(100):
+    lc, maps, _ = prep(frame=0.0, S=2, Q=60, aniso=1.0); h = G.heterogeneity(G.apply_metric(lc["D"], maps["M2"]), lc, rng, 199); pf.append(h["p_tau2"]); Hs.append(h["H"])
+for _ in range(20):
+    lc, maps, _ = prep(frame=0.0, S=2, Q=60, hetero=0.3, aniso=1.0); pp_.append(G.heterogeneity(G.apply_metric(lc["D"], maps["M2"]), lc, rng, 199)["p_tau2"])
+pf, pp_ = np.array(pf), np.array(pp_); print("tau2 sign-flip: FPR at .05", (pf <= .05).mean(), "mean H", np.mean(Hs), "; power hetero .3 rad", (pp_ <= .05).mean())
+ok &= check("tau2 sign-flip FPR <= .08 at .05 (100 sims) and mean H ~ 0 (|H| < .05)", (pf <= .05).mean() <= .08 and abs(np.mean(Hs)) < .05)
+ok &= check("tau2 sign-flip power >= .8 for per-question rotations of sd .3 rad (20 sims)", (pp_ <= .05).mean() >= .8)
+# (d) affine predictability from the non-demeaned base state: power when structured, FPR when the heterogeneity is random
+sp, sf = [], []
+for _ in range(20):
+    lc, maps, Xb = prep(frame=0.0, S=2, Q=60, hetero=0.5, struct=True); h = G.heterogeneity(lc["D"], lc, rng, 0)
+    sp.append(G.predictability(h["_dA"], h["_dB"], Xb, rng, nperm=99)["p"])
+for _ in range(50):
+    lc, maps, Xb = prep(frame=0.0, S=2, Q=60, hetero=0.5); h = G.heterogeneity(lc["D"], lc, rng, 0)
+    sf.append(G.predictability(h["_dA"], h["_dB"], Xb, rng, nperm=99)["p"])
+sp, sf = np.array(sp), np.array(sf); print("predictability: power (structured) at .05", (sp <= .05).mean(), "; FPR (random hetero)", (sf <= .05).mean())
+ok &= check("predictability power >= .8 when the rotation is affine in the base state (20 sims)", (sp <= .05).mean() >= .8)
+ok &= check("predictability FPR <= .12 when heterogeneity is random (50 sims)", (sf <= .05).mean() <= .12)
 
 try:
     from lm import _npn

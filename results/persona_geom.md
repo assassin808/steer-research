@@ -1,7 +1,8 @@
 # Persona-trait manifold geometry (paper W) — status
 
-Status: **PARTIAL (pipeline built, prereg filled, no data yet)** — 2026-10-29. Prereg: `results/persona_geom_prereg.md` (v1.1 +
-amendment A1: sizes and statistics from `results/power_curve.md` v2; pilot gate). Code: `persona_geom/`. Raw outputs: `~/scratch/persona_geom/<RUN>/`.
+Status: **PARTIAL (pipeline built, prereg filled, no data yet)** — 2026-10-30. Prereg: `results/persona_geom_prereg.md` (v1.1 +
+A1: sizes and statistics from `results/power_curve.md` v2, pilot gate; A2: noise-unbiased trend energies, vector heterogeneity,
+Σ_w metric, from `reports/转向流的量化方法.md`). Code: `persona_geom/`. Raw outputs: `~/scratch/persona_geom/<RUN>/`.
 
 ## What exists
 - Trait data for 6 traits (`persona_geom/data/trait_data/`): evil / sycophantic / hallucinating from persona_vectors (extract 20 +
@@ -17,7 +18,14 @@ amendment A1: sizes and statistics from `results/power_curve.md` v2; pilot gate)
 - Hook check (`check_equiv.py`, Gemma on CPU): generate-time vs teacher-forced log-probs agree to 1.5e-5 for the IDEEA and add hooks.
 
 ## CPU smoke tests (login node; Narval compute nodes are all in POWEROUT20261027 until 2026-11-03)
-SMOKE_RESULTS
+- 2026-10-29/30, 35-cell design (A1), RUN=smoke: 2 questions/source (12 questions), 2 samples, 8-token answers, pseudo-judge beyond
+  24 items. **Every stage ran end to end**: test_geom, check_equiv (gen vs teacher-forced 1.5e-5), gen main (6 shards, 840 rows), judge,
+  embed, steer sweep, analyze_geom (5 reps), pilot_check, steer calib, steer eval, analyze_steer, blind pack. Numbers are meaningless
+  (8 tokens); they only show the code paths work. After A2 the geometry stages (analyze_geom, pilot_check) were re-run on the same
+  smoke data.
+- Login-node caveats: 16 GB per-user memory cap (the first two attempts were OOM-killed in the sweep, which loads Gemma and the
+  Qwen judge together; the smoke now loads the judge in bf16 on CPU); the CPU steering stages take ~16 h on the login node.
+- Synthetic calibration: `test_geom.py` ALL PASS (A1 and A2 checks; prereg amendment log).
 
 ## Waiting on
 1. GPUs (after 2026-11-03): `persona_geom/sbatch/submit_pilot.sh` (g0, ~1.5 GPU-h) → `pilot_check.json` design_ok →

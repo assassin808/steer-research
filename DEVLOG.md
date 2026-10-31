@@ -330,3 +330,21 @@ The running geometry agent was redirected accordingly; it must update its prereg
   bound, pilot gate = bootstrap-projected planted power on the pilot's own residual cells (c0 CPU job), κ by cross-sample products with
   demeaning correction (.52/.57 for .55). test_geom ALL PASS incl. 200-sim FPR checks (≤ .01 at p ≤ .02; ≤ .045 at .05 with
   level-dependent cell variance). Limitation: FPR not re-checked on real activation backgrounds.
+
+- 2026-10-30: 文献调研笔记 research_notes/转向流的量化方法/field_estimation_boundary.md(向量场估计 dynamo/sparseVFC、图Hodge、Koopman、OT-CFM、切空间、reach/边界/trait特异OOD分数)。纯文献,无实验。
+
+## 2026-10-30 文献综述报告：转向流的量化方法
+- 把 research_notes/转向流的量化方法/ 下的 4 份笔记综合成 reports/转向流的量化方法.md：排序列出 12 种方法，并标注了不推荐的方法。纯文献综述，没有跑任何实验，也没有新的结论。
+
+## 2026-10-30 — persona-geom prereg amendment A2 (literature review methods 1–3; pre-data)
+- DECIDED · A2 (coordinator, from reports/转向流的量化方法.md): A×B cross trend energies E1–E4, R, R2 = R2⊥ (= quad⊥) + R2_tan;
+  snr_x; H2b vector heterogeneity τ²/H/I²/cross-question cosine with sign-flip test, affine predictability from non-demeaned base
+  state (fold-cross-fitted, A→B), IDEEA between/within split (descriptive); primary tests once under Σ_w-Mahalanobis (LW), effect
+  panel M0/M1/M2. Methods 5–6 (composition, order) out of scope for paper W.
+- FOUND · audit: quad⊥, offline, ord1, turn, straight, D1, separation already cross-estimated; class SNR was same-sample.
+- FOUND · in-sample Σ_w whitening biases cross products up: τ² sign-flip FPR 1.0 (synthetic, anisotropic noise) → Σ_w leave-trait-out
+  (cells of other traits only): FPR .07 at .05, power 1.0. Primary curvature test stays valid either way (Σ_w invariant under cell
+  permutation / sign flip) — FPR .01.
+- FOUND · predictability only detects dependence on top-10 base-state PCs (power 1.0 when along a major axis; FPR .02).
+- TRIED · smoke (35 cells) OOM-killed twice on the login node (16 GB cap: Gemma fp32 + Qwen fp32) → judge bf16 on CPU in SMOKE;
+  then ALL STAGES OK (2026-10-30 02:27).

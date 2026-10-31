@@ -52,7 +52,7 @@ class Judge:
         dev = "cuda" if torch.cuda.is_available() else "cpu"
         self.dev = dev
         self.tok = AutoTokenizer.from_pretrained(JUDGE_MODEL); self.tok.padding_side = "left"
-        self.m = AutoModelForCausalLM.from_pretrained(JUDGE_MODEL, dtype=torch.bfloat16 if dev == "cuda" else torch.float32).to(dev).eval()
+        self.m = AutoModelForCausalLM.from_pretrained(JUDGE_MODEL, dtype=torch.bfloat16 if (dev == "cuda" or os.environ.get("SMOKE")) else torch.float32).to(dev).eval()   # smoke: bf16 on CPU (16 GB login-node cap)
         ids = lambda s: self.tok.convert_tokens_to_ids(s)
         self.YN = [ids("Yes"), ids("No")]; self.DIG = [ids(str(d)) for d in range(10)]
         assert all(isinstance(x, int) and x != self.tok.unk_token_id for x in self.YN + self.DIG)

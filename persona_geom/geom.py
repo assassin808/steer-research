@@ -102,8 +102,10 @@ def curve_from_halves(CA, CB, c_all, W):
         ch = (cA[-1] - cA[0]) @ (cB[-1] - cB[0])
         res["straight"].append(np.sqrt(max(ch, 0)) / max(np.sqrt(np.maximum(ii, 0)).sum(), 1e-300))
     out = {k: float(np.nanmean(v)) if len(v) and np.isfinite(v).any() else np.nan for k, v in res.items()}
-    out["snr"] = float(((c_all - c_all.mean(0)) ** 2).sum(1).mean() / W)
+    out["snr"] = float(((c_all - c_all.mean(0)) ** 2).sum(1).mean() / W)          # same-sample (noise-inflated), descriptive
     out["_M"] = np.mean(Ms, 0) if Ms else None
+    out["snr_x"] = float(np.trace(out["_M"]) / L / W) if Ms else np.nan              # A2: cross-estimated
+    out.update(trend_energies(CA, CB) if Ms else {})
     return out
 
 
@@ -311,6 +313,103 @@ def cell_kappa(X, meta, t, C=None, levels=(1, 2, 3, 4)):
         else: b = (b + W / (Qn * S)) / (1 - 1 / Qn)
         kap[k] = b / (W / 5)
     return dict(kappa=float(np.nanmean(list(kap.values()))), kappa_by_level={str(k): float(v) for k, v in kap.items()}, W_eps=W)
+
+
+# ------------------------------------------------------------------ A2: trend energies, heterogeneity, metric panel
+def _polys(L, deg=4):
+    """orthonormal polynomial contrasts of degree 1..min(deg, L-1) over equally spaced levels (rows), sign: last level positive"""
+    x = np.linspace(0, 1, L); V = np.vander(x, min(deg, L - 1) + 1, increasing=True)
+    Qm, _ = np.linalg.qr(V); Qm = Qm * np.sign(Qm[-1]); return Qm[:, 1:].T
+
+
+def trend_energies(CA, CB):
+    """A x B cross estimates (noise-unbiased) of the orthogonal-polynomial trend energies of the ladder centroids (A2, method 1).
+    E_j = <c_j . C^A, c_j . C^B> (j = 1..4, orthonormal contrasts); R = (E2 + E3 + E4) / E1; R2 = E2 / E1 split into the normal part
+    R2_perp (orthogonal to the pooled linear direction u; geometric curvature; equals quadperp) and the tangential part R2_tan
+    (unequal spacing along the line). Averaged over the half splits."""
+    L = len(CA[0]); P = _polys(L); out = {f"E{j + 1}": [] for j in range(len(P))}; out.update(R=[], R2=[], R2_perp=[], R2_tan=[])
+    u = P[0] @ (np.mean(CA, 0) + np.mean(CB, 0)); u /= np.linalg.norm(u) + 1e-300
+    for cA, cB in zip(CA, CB):
+        bA, bB = P @ cA, P @ cB; E = (bA * bB).sum(1)
+        for j in range(len(P)): out[f"E{j + 1}"].append(E[j])
+        if E[0] > 0:
+            out["R"].append(E[1:].sum() / E[0]); out["R2"].append(E[1] / E[0])
+            ta, tb = bA[1] @ u, bB[1] @ u
+            out["R2_tan"].append(ta * tb / E[0]); out["R2_perp"].append((E[1] - ta * tb) / E[0])
+    return {k: float(np.mean(v)) if len(v) else np.nan for k, v in out.items()}
+
+
+def sigma_w_maps(X, meta, shrink=True, exclude=()):
+    """metric panel (A2, method 3) as linear maps T (rows x -> x @ T): M0 raw (identity), M1 per-coordinate z (total SD of the
+    demeaned rows), M2 Sigma_w-Mahalanobis whitening, Sigma_w from within-cell sample differences (x_s - x_s')/sqrt(2) over every
+    (question, trait, level) cell, Ledoit-Wolf shrinkage. Null hypotheses of collinearity / tau^2 = 0 are invariant under any
+    constant linear metric; effect sizes are not.
+    exclude: traits whose cells are left out of Sigma_w (use the analysed trait and 'placebo', i.e. the cells D is built from):
+    an in-sample Sigma_w shrinks exactly the A - B directions of the analysed cells and biases cross products such as tau^2
+    upward (test_geom.py: FPR 1.0 with in-sample whitening). Assumes within-cell sampling noise is shared across instructions."""
+    from sklearn.covariance import LedoitWolf
+    key = {}
+    for i, k in enumerate(zip(meta["q"], meta["trait"], meta["level"])):
+        if k[1] not in exclude: key.setdefault(k, []).append(i)
+    diffs = [(X[ix[a]] - X[ix[a + 1]]) / np.sqrt(2) for ix in key.values() for a in range(len(ix) - 1)]
+    Dd = np.array(diffs); d = X.shape[1]
+    C = LedoitWolf(assume_centered=True).fit(Dd).covariance_ if shrink else Dd.T @ Dd / len(Dd)
+    w, V = np.linalg.eigh(C); w = np.maximum(w, w.max() * 1e-10)
+    keep = ~np.isin(meta["trait"], list(exclude)); sd = X[keep].std(0); sd[sd == 0] = 1.0
+    return dict(M0=None, M1=np.diag(1 / sd), M2=(V / np.sqrt(w)) @ V.T), dict(n_diff=len(Dd), dim=d)
+
+
+def apply_metric(D, T):
+    return D if T is None else D @ T
+
+
+def heterogeneity(D, lc, rng, nflip=999):
+    """vector meta-analytic heterogeneity of the per-question linear trend d_i (A2, method 2), all A x B cross estimates:
+    |dbar|^2_cv = <dbar^A, dbar^B>; tau^2 = 1/(N-1) sum_i <d_i^A - dbar^A, d_i^B - dbar^B>; sigma^2_d = 1/N sum_i |d_i^A - d_i^B|^2/2;
+    H = tau^2 / |dbar|^2_cv; I2 = tau^2 / (tau^2 + sigma^2_d / 2); cos_x = mean_{i!=j} <d_i^A, d_j^B> / mean_i <d_i^A, d_i^B>
+    (disattenuated cross-question cosine, ratio of means). p_tau2: sign-flip null of the per-question cross products (exchangeable
+    under tau^2 = 0: A and B residuals independent and symmetric). Uses the first half split."""
+    m = lc["masks"][0]; p1 = _polys(len(lc["lv"]))[0]
+    cA = np.stack([_full(D[i][:, m].mean(1), lc) for i in range(len(D))]); cB = np.stack([_full(D[i][:, ~m].mean(1), lc) for i in range(len(D))])
+    dA, dB = np.einsum("l,nld->nd", p1, cA), np.einsum("l,nld->nd", p1, cB); N = len(dA)
+    mA, mB = dA.mean(0), dB.mean(0); rA, rB = dA - mA, dB - mB
+    t_i = (rA * rB).sum(1); tau2 = t_i.sum() / (N - 1); com = float(mA @ mB)
+    sig = float((((dA - dB) ** 2).sum(1) / 2).mean())
+    within = (dA * dB).sum(1).mean(); cross = ((dA.sum(0) @ dB.sum(0)) - (dA * dB).sum()) / (N * (N - 1))
+    flips = np.array([(t_i * rng.choice([-1.0, 1.0], N)).sum() for _ in range(nflip)]) / (N - 1)
+    return dict(tau2=float(tau2), dbar2=com, H=float(tau2 / com) if com > 0 else np.nan, I2=float(tau2 / (tau2 + sig / 2)),
+                sigma2_d=sig, cos_x=float(cross / within) if within > 0 else np.nan,
+                p_tau2=float((1 + np.sum(flips >= tau2)) / (1 + nflip)), N=int(N), _dA=dA, _dB=dB)
+
+
+def predictability(dA, dB, Xb, rng, nfold=5, k=10, lam=1.0, nperm=199):
+    """affine predictability of the per-question direction deviation delta_i = d_i - dbar from the NON-demeaned base activation
+    x_i,base (A2, method 2): ridge on the top-k PCs (standardised) of x_base, fitted on sample half A of the training-fold
+    questions, evaluated on half B of held-out questions (and B->A, averaged). share = sum_i <pred_i, delta_i^B> / sum_i
+    <delta_i^A, delta_i^B> (fraction of tau^2 explained; noise-unbiased). Null: x_base permuted across questions."""
+    N = len(dA); k = min(k, N - 2); Z = Xb - Xb.mean(0); U, s, _ = np.linalg.svd(Z, full_matrices=False); F = U[:, :k] * np.sqrt(N)
+    fold = rng.permutation(N) % nfold
+
+    def share(F):
+        num = 0.0; den = 0.0
+        for a, b in ((dA, dB), (dB, dA)):
+            da, db = a - a.mean(0), b - b.mean(0); pred = np.zeros_like(da)
+            for f in range(nfold):
+                tr, te = fold != f, fold == f
+                Bm = np.linalg.solve(F[tr].T @ F[tr] + lam * tr.sum() * np.eye(F.shape[1]), F[tr].T @ da[tr]); pred[te] = F[te] @ Bm
+            num += (pred * db).sum(); den += (da * db).sum()
+        return num / den if den > 0 else np.nan
+    obs = share(F); nul = np.array([share(F[rng.permutation(N)]) for _ in range(nperm)])
+    return dict(share=float(obs), p=float((1 + np.sum(nul >= obs)) / (1 + nperm)), k=k, lam=lam)
+
+
+def cluster_split(dA, dB, lab):
+    """tau^2 split into between- and within-cluster parts (A2): questions assigned to their nearest IDEEA cluster (labels lab);
+    between = sum_c (n_c / N) <deltabar_c^A, deltabar_c^B>, share = between / tau^2 (cross estimates)."""
+    N = len(dA); rA, rB = dA - dA.mean(0), dB - dB.mean(0); tau2 = (rA * rB).sum() / (N - 1)
+    btw = sum((lab == c).sum() / N * float(rA[lab == c].mean(0) @ rB[lab == c].mean(0)) for c in np.unique(lab))
+    return dict(between=float(btw), share_between=float(btw / tau2) if tau2 > 0 else np.nan,
+                sizes=[int((lab == c).sum()) for c in np.unique(lab)])
 
 
 # ------------------------------------------------------------------ H2: input dependence of the intensity direction

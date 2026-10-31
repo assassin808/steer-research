@@ -1,6 +1,6 @@
 # Prereg — Is persona steering space flat? (paper W, Zheng Wang's proposal, done the way it was proposed)
 
-Status: **v1.1 + amendment A1 (2026-10-29) — still before any persona-geometry data exists.** A1 fills every former power-curve field
+Status: **v1.1 + amendments A1 (2026-10-29) and A2 (2026-10-30) — still before any persona-geometry data exists.** A1 fills every former power-curve field
 from `results/power_curve.md` v2 (commit b591875); changed text is marked [A1]. v1 (commit 121ff6e) was revised after an
 adversarial Opus design review (2 fatal, 9 major findings; revision log at the end). Only CPU smoke tests on 2 questions/trait with
 8-token answers and pseudo-judge scores have been run, to debug code.
@@ -101,7 +101,21 @@ Split halves = all balanced bipartitions of sample indices within every (questio
   paired differences D(q, level, sample) = trait row − placebo row, which is exact for these statistics): residuals around the
   line fit (Freedman–Lane); two cell-level nulls, (a) whole (question, level) cells permuted across the non-zero levels within
   question, (b) whole cells sign-flipped (robust to level-dependent cell variance); **p = max(p_a, p_b)**; 999 reps each.
-  The row-level v1.1 wild bootstrap is reported as secondary only (it is liberal under cell effects: test_geom.py). (Synthetic: a
+  The row-level v1.1 wild bootstrap is reported as secondary only (it is liberal under cell effects: test_geom.py).
+  [A2] The primary test (and the ord1 gate) is computed once under the **Σ_w-Mahalanobis metric (M2)**: D is whitened by
+  Σ_w^{-1/2}, Σ_w = Ledoit–Wolf covariance of within-cell sample differences (x_s − x_s′)/√2 over the (question, trait, level)
+  cells of the analysed split **except the analysed trait's and the placebo cells** (leave-trait-out; `geom.sigma_w_maps`).
+  An in-sample Σ_w shrinks exactly the A − B directions of the cells D is built from and biased τ² upward (synthetic FPR 1.0);
+  the assumption is that within-cell sampling noise is shared across instructions. Effect sizes are reported over the panel M0 raw, M1 per-coordinate z,
+  M2 Σ_w (the collinearity null is invariant under any constant linear metric, so the test is not repeated per metric).
+- [A2] **Noise-unbiased trend energies** (literature review `reports/转向流的量化方法.md`, method 1): orthonormal polynomial
+  contrasts c1–c4 over the 5 one-sided levels, E_j = ⟨c_j·C^A, c_j·C^B⟩ (A × B cross products only), R = (E2+E3+E4)/E1,
+  R2 = E2/E1 = R2⊥ (normal part, geometric curvature; identical to quadperp) + R2_tan (tangential part along the pooled linear
+  direction; unequal spacing, not curvature). R is a secondary statistic under the same primary test. Audit of the existing
+  statistics: quadperp, offline, ord1, turn, straight, D1, separation r are already A × B cross estimates (P⊥ uses the pooled
+  A+B linear direction, as the review allows); the class SNR was same-sample → `snr_x` (cross) added, `snr` kept descriptive;
+  local field, kNN, geo_ratio and path straightness are same-sample and stay descriptive (path straightness is only used
+  against fits on null data). (Synthetic: a
   null built around pooled placebo means was biased low and would have called a straight line curved, p = 0; fixed.)
   Clustered reference: ladder points at orthogonal random directions with the observed spread.
 - Input dependence: d_q = mean(t, strong) − mean(placebo, strong) per question, split halves; D1 = share of reliable per-question
@@ -126,7 +140,7 @@ Split halves = all balanced bipartitions of sample indices within every (questio
   line null; `offline` secondary; `turn`, `straight`, geo_ratio and field_rot descriptive only (no power: power_curve.md).
   Gate [A1]: one-sided ladder ord1 relabel p ≤ .025. Verdict per trait, Holm over H0-passing traits:
   - **NO GRADED ORDER** if the gate fails (shape not interpreted);
-  - **CURVED** if gate passes and the primary test of quadperp gives Holm-adjusted p ≤ .02 over the H0-passing traits (adjusted
+  - **CURVED** if gate passes and the primary test (M2) of quadperp gives Holm-adjusted p ≤ .02 over the H0-passing traits (adjusted
     p_(j) = max_{i ≤ j} (m − i + 1) p_(i); smallest raw threshold .02/6 ≈ .0033, hence 999 null reps);
     [A1] No separate θ-effect value threshold (the power curve gives none that is calibrated); quadperp's value is reported;
   - **FLAT (powered)** if gate passes, not CURVED, and the **in-sample planted-arc power** has a one-sided 90% Clopper–Pearson
@@ -141,6 +155,14 @@ Split halves = all balanced bipartitions of sample indices within every (questio
   - The two-sided ladder is reported, but its bend between neg and positive poles is not counted as curvature: the neg instruction
     describes a different persona ("be kind"), not "less trait".
 - **H2 input dependence**: INPUT-DEPENDENT if the D1 CI upper bound < .80; INPUT-INDEPENDENT if the lower bound > .90; else undetermined.
+- [A2] **H2b vector heterogeneity** (review method 2; per-question linear trend d_i, cross estimates, M2): τ² = 1/(N−1) Σ_i
+  ⟨d_i^A − d̄^A, d_i^B − d̄^B⟩, H = τ²/⟨d̄^A, d̄^B⟩, I² = τ²/(τ² + σ²_d/2), disattenuated cross-question cosine (ratio of means).
+  HETEROGENEOUS if the sign-flip test of τ² > 0 (999 flips) has Holm-adjusted p ≤ .05 over the H0-passing traits.
+  STRUCTURED if also the affine predictability of δ_i = d_i − d̄ from the non-demeaned bare-neutral base activation (ridge on its
+  top-10 PCs, fit on half A of training-fold questions, evaluated on half B of held-out questions, share of τ² explained)
+  beats a question-permutation null at p ≤ .05. Descriptive: H, I², cosine panel over M0–M2; τ² split into between- and within-
+  IDEEA-cluster parts (questions assigned to the nearest KMeans(4) centroid of the trait's raw D+ activations). Note: τ² > 0
+  includes question × level cell effects, which are genuine question-specific direction differences.
 - **H3 separation of neighbours**: SEPARATE if the r CI upper bound < .90; SAME DIRECTION if the lower bound > .95; else partial.
   kNN accuracy must also beat the shuffle p95. Neighbour r is compared with the non-neighbour baseline. "Beyond the text embedding"
   needs the same verdict on `res`.
@@ -245,6 +267,25 @@ states (~1.5 h), g4 evaluation (6 traits × 30 q × (1 + 7 strengths × 6 arms) 
   wild-bootstrap paired line null (found by test_geom.py).
 
 ## Amendment log
+- **A2 (2026-10-30, pre-data; no GPU stage has run).** From the literature review `reports/转向流的量化方法.md` (ranked methods
+  1–3; methods 5–6 concern trait composition and order effects, which this study does not test, so nothing is adopted from them
+  here), on the coordinator's instruction:
+  1. noise-unbiased A × B trend energies E1–E4, R, R2 split into R2⊥ (= quadperp) and R2_tan; cross SNR (§4);
+  2. H2b: τ², H, I², disattenuated cosine, sign-flip test, affine predictability from the non-demeaned base activation, IDEEA
+     between/within split (§5);
+  3. primary tests (quadperp, ord1 gate, τ²) once under Σ_w-Mahalanobis (Ledoit–Wolf); effect sizes over M0/M1/M2; planted
+     power (FLAT rule, pilot projection) under M2 as well;
+  4. every new decision statistic calibrated in `test_geom.py` before use (results below); the IDEEA split and the metric panel
+     are descriptive. Not adopted: merging adjacent levels whose step is near noise (would change L after seeing data); PCA-64 for
+     the tests (the D-level tests are exact in full dimension, so no truncation or basis-fit leakage).
+  Calibration (`test_geom.py`, log `~/scratch/persona_geom/test_geom_A2.txt`): all pass. E2 on a pure-noise ladder: cross mean
+  .0001 ± .024 (unbiased) vs same-sample mean 1.51 (biased up). M2 primary test with anisotropic noise (log-SD 1) and κ = .55,
+  S = 2, Q = 60: FPR .01 at p ≤ .02 and .01 at .05 (100 sims); arc90 at SNR .2 detected at .02/6 in 10/10. τ² sign-flip (M2,
+  leave-trait-out Σ_w): FPR .07 at .05 (100 sims; Monte-Carlo CI to ≈ .13, so treat as nominal-to-slightly-liberal), mean H .001;
+  power 20/20 for per-question rotations of SD .3 rad. With in-sample Σ_w the τ² FPR was 1.0 → leave-trait-out adopted.
+  Predictability: power 20/20 when the rotation is affine in a major base-state axis, FPR .02 (50 sims) for random heterogeneity;
+  it is blind to dependence on base-state directions outside the top-10 PCs (stated estimand). A1 checks still pass.
+  Real-background calibration (activation noise rather than Gaussian) is still not done: a limitation for all A1/A2 tests.
 - **A1 (2026-10-29, pre-data; no GPU stage has run).** Fills the power-curve fields from `results/power_curve.md` v2 (commit b591875)
   and the coordinator's recommendations, then revised after an adversarial Opus review of the amendment (2 fatal, 6 major):
   1. a fourth intensity word "extreme" → one-sided ladder L = 5, 35 cells per question (§2.1–2.2);
